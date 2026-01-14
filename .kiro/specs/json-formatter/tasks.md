@@ -59,13 +59,13 @@
     - ใช้ filename "formatted.json"
     - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 5. Implement Tree View
-  - [ ] 5.1 สร้าง `src/components/json-tree-view.tsx`
+- [x] 5. Implement Tree View
+  - [x] 5.1 สร้าง `src/components/json-tree-view.tsx`
     - Recursive TreeNode component
     - Expand/collapse functionality
     - Data type indicators (icons/colors)
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 5.2 Implement JSONPath display on hover
+  - [x] 5.2 Implement JSONPath display on hover
     - คำนวณ path สำหรับแต่ละ node
     - แสดง tooltip เมื่อ hover
     - _Requirements: 11.6_
@@ -76,7 +76,7 @@
 - [ ] 6. Checkpoint - ตรวจสอบ Format Mode
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Implement JSONPath Query Mode
+- [-] 7. Implement JSONPath Query Mode
   - [ ] 7.1 เพิ่ม JSONPath query logic ใน json-utils
     - ใช้ jsonpath-plus library
     - Handle invalid path errors

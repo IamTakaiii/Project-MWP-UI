@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, FileJson, GitCompare, Search } from 'lucide-react'
+import { ArrowLeft, FileJson, GitCompare, Search, List, TreePine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { JsonInput } from '@/components/json-input'
 import { JsonViewer } from '@/components/json-viewer'
+import { JsonTreeView } from '@/components/json-tree-view'
 import { ActionButtons } from '@/components/action-buttons'
 import { useJsonFormatter } from '@/hooks/use-json-formatter'
 
@@ -23,12 +24,14 @@ const modeTabs: ModeTab[] = [
 
 export function JsonFormatterPage() {
   const [mode, setMode] = useState<FormatterMode>('format')
+  const [viewMode, setViewMode] = useState<'text' | 'tree'>('text')
   const {
     input,
     setInput,
     output,
     error,
     isValid,
+    parsedJson,
     prettify,
     minify,
     clear,
@@ -110,12 +113,64 @@ export function JsonFormatterPage() {
                   enableHighlight={true}
                 />
 
-                {/* Output Area with Syntax Highlighting */}
-                <JsonViewer
-                  value={output}
-                  label="Output"
-                  placeholder="ผลลัพธ์จะแสดงที่นี่..."
-                />
+                {/* Output Area */}
+                <div className="space-y-3">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Output
+                    </label>
+                    
+                    {/* Tree View Toggle */}
+                    <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('text')}
+                        className={`
+                          flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
+                          transition-all duration-200
+                          ${viewMode === 'text'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }
+                        `}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                        Text
+                      </button>
+                      <button
+                        onClick={() => setViewMode('tree')}
+                        className={`
+                          flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
+                          transition-all duration-200
+                          ${viewMode === 'tree'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }
+                        `}
+                      >
+                        <TreePine className="w-3.5 h-3.5" />
+                        Tree
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Output Display */}
+                  {viewMode === 'text' ? (
+                    <JsonViewer
+                      value={output}
+                      placeholder="ผลลัพธ์จะแสดงที่นี่..."
+                    />
+                  ) : (
+                    <JsonTreeView
+                      data={parsedJson}
+                      onPathClick={(path) => {
+                        // Copy path to clipboard
+                        navigator.clipboard.writeText(path)
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           )}
