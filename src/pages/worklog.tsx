@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useLocalStorage, useWorklog, useTasks } from '@/hooks'
 import { generateDateRange } from '@/lib/date-utils'
 import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
-import { authService } from '@/services/auth.service'
+import { jiraAuthService } from '@/services/auth.service'
 import type { JiraIssue } from '@/types'
 
 export function WorklogPage() {
@@ -38,7 +38,7 @@ export function WorklogPage() {
     const checkAuth = async () => {
       setIsCheckingAuth(true)
       try {
-        const session = await authService.getCurrentSession()
+        const session = await jiraAuthService.getCurrentSession()
         setIsAuthenticated(session.authenticated)
         if (session.authenticated && session.jiraUrl) {
           setJiraUrl(session.jiraUrl)
@@ -56,7 +56,7 @@ export function WorklogPage() {
   const handleLoginSuccess = useCallback(() => {
     setIsAuthenticated(true)
     // Refresh session info
-    authService.getCurrentSession().then((session) => {
+    jiraAuthService.getCurrentSession().then((session) => {
       if (session.authenticated && session.jiraUrl) {
         setJiraUrl(session.jiraUrl)
       }
@@ -157,7 +157,7 @@ export function WorklogPage() {
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    await authService.logout()
+                    await jiraAuthService.logout()
                     setIsAuthenticated(false)
                     setJiraUrl('')
                   }}

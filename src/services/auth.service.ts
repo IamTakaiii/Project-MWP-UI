@@ -1,5 +1,5 @@
 /**
- * Authentication Service
+ * Jira Authentication Service
  * 
  * Handles Jira authentication via session-based auth
  */
@@ -25,9 +25,9 @@ export interface SessionInfo {
 }
 
 /**
- * Auth Service Class
+ * Jira Auth Service Class
  */
-class AuthService extends ApiClient {
+class JiraAuthService extends ApiClient {
   constructor() {
     super(getServiceConfig('jira'))
   }
@@ -55,7 +55,7 @@ class AuthService extends ApiClient {
 }
 
 // Export singleton instance
-export const authService = new AuthService()
+export const jiraAuthService = new JiraAuthService()
 
 // Also export the class for testing or custom instances
-export { AuthService }
+export { JiraAuthService }

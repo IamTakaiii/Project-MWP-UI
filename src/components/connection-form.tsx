@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { authService } from '@/services/auth.service'
+import { jiraAuthService } from '@/services/auth.service'
 
 interface LoginFormProps {
   onLoginSuccess?: () => void
@@ -20,7 +20,7 @@ export function ConnectionForm({ onLoginSuccess }: LoginFormProps) {
     setError(null)
 
     try {
-      await authService.login({ jiraUrl, email, apiToken })
+      await jiraAuthService.login({ jiraUrl, email, apiToken })
       // Clear sensitive data from state
       setApiToken('')
       onLoginSuccess?.()

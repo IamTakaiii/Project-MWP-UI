@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { jiraService, type WorklogEntry, type DailyWorklog } from '@/services'
-import { authService } from '@/services/auth.service'
+import { jiraAuthService } from '@/services/auth.service'
 import { WorklogDialog, DeleteConfirmDialog, type WorklogFormData } from '@/components/worklog-dialog'
 import { cn } from '@/lib/utils'
 
@@ -131,7 +131,7 @@ export function HistoryPage() {
     const checkAuth = async () => {
       setIsCheckingAuth(true)
       try {
-        const session = await authService.getCurrentSession()
+        const session = await jiraAuthService.getCurrentSession()
         setIsAuthenticated(session.authenticated)
         if (session.authenticated && session.jiraUrl) {
           setJiraUrl(session.jiraUrl)
