@@ -3,6 +3,8 @@
  * Provides validation, prettify, and minify functions
  */
 
+import { JSONPath } from 'jsonpath-plus'
+
 export interface ValidationResult {
   isValid: boolean
   error: string | null
@@ -12,6 +14,12 @@ export interface ValidationResult {
 export interface FormatResult {
   success: boolean
   output: string
+  error: string | null
+}
+
+export interface QueryResult {
+  success: boolean
+  result: unknown | null
   error: string | null
 }
 
@@ -153,4 +161,48 @@ export const SAMPLE_JSON = {
     created: '2024-01-15',
     updated: null,
   },
+}
+
+/**
+ * Query JSON using JSONPath expression
+ * Requirements: 8.2, 8.3, 8.4, 8.5
+ */
+export function queryJsonPath(json: unknown, path: string): QueryResult {
+  if (!path.trim()) {
+    return {
+      success: false,
+      result: null,
+      error: 'กรุณาใส่ JSONPath query',
+    }
+  }
+
+  try {
+    const result = JSONPath({
+      path,
+      json: json as object | any[],
+      wrap: false,
+    })
+
+    // Check if result is undefined or no matches found
+    if (result === undefined) {
+      return {
+        success: true,
+        result: null,
+        error: 'ไม่พบข้อมูลที่ตรงกับ path นี้',
+      }
+    }
+
+    return {
+      success: true,
+      result,
+      error: null,
+    }
+  } catch (e) {
+    const error = e as Error
+    return {
+      success: false,
+      result: null,
+      error: `JSONPath ไม่ถูกต้อง: ${error.message}`,
+    }
+  }
 }

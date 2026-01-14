@@ -1,5 +1,7 @@
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import Editor from 'react-simple-code-editor'
+import Prism from 'prismjs'
+import 'prismjs/components/prism-json'
+import 'prismjs/themes/prism-tomorrow.css'
 
 export interface JsonViewerProps {
   value: string
@@ -18,6 +20,10 @@ export function JsonViewer({
 }: JsonViewerProps) {
   const hasContent = value.trim().length > 0
 
+  const highlightCode = (code: string) => {
+    return Prism.highlight(code, Prism.languages.json, 'json')
+  }
+
   return (
     <div className="space-y-3">
       {label && (
@@ -30,24 +36,21 @@ export function JsonViewer({
       <div className="relative w-full h-80 bg-muted/30 border border-border rounded-xl overflow-hidden">
         {hasContent ? (
           <div className="h-full overflow-auto">
-            <SyntaxHighlighter
-              language="json"
-              style={vscDarkPlus}
-              customStyle={{
-                margin: 0,
-                padding: '1rem',
-                background: 'transparent',
+            <Editor
+              value={value}
+              onValueChange={() => {}} // Read-only
+              highlight={highlightCode}
+              padding={16}
+              readOnly={true}
+              style={{
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 fontSize: '0.875rem',
                 lineHeight: '1.5',
+                minHeight: '100%',
+                backgroundColor: 'transparent',
               }}
-              codeTagProps={{
-                style: {
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                },
-              }}
-            >
-              {value}
-            </SyntaxHighlighter>
+              textareaClassName="focus:outline-none"
+            />
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">

@@ -76,15 +76,15 @@
 - [ ] 6. Checkpoint - ตรวจสอบ Format Mode
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 7. Implement JSONPath Query Mode
-  - [ ] 7.1 เพิ่ม JSONPath query logic ใน json-utils
+- [x] 7. Implement JSONPath Query Mode
+  - [x] 7.1 เพิ่ม JSONPath query logic ใน json-utils
     - ใช้ jsonpath-plus library
     - Handle invalid path errors
     - _Requirements: 8.2, 8.3, 8.4, 8.5_
   - [ ]* 7.2 Write property test for JSONPath query
     - **Property 4: JSONPath Query Subset**
     - **Validates: Requirements 8.2, 8.5**
-  - [ ] 7.3 สร้าง Query Mode UI
+  - [x] 7.3 สร้าง Query Mode UI
     - JSONPath input field
     - Query result display
     - _Requirements: 8.1, 8.2, 8.3, 8.4_

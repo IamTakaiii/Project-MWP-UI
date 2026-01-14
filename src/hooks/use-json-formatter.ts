@@ -4,6 +4,7 @@ import {
   prettifyJson,
   minifyJson,
   parseJson,
+  queryJsonPath,
   SAMPLE_JSON,
   type ValidationResult,
 } from '@/lib/json-utils'
@@ -206,17 +207,28 @@ export function useJsonFormatter(): UseJsonFormatterReturn {
    * Requirements: 8.2, 8.3, 8.4, 8.5
    */
   const executeQuery = useCallback(() => {
-    if (!isValid || !queryPath.trim()) {
+    if (!isValid || !parsedJson) {
       setQueryResult(null)
-      setQueryError(queryPath.trim() ? 'กรุณาใส่ JSON ที่ถูกต้องก่อน' : null)
+      setQueryError('กรุณาใส่ JSON ที่ถูกต้องก่อน')
       return
     }
 
-    // JSONPath query will be implemented in task 7
-    // For now, just set placeholder
-    setQueryResult(null)
-    setQueryError('JSONPath query จะถูก implement ใน task 7')
-  }, [isValid, queryPath])
+    if (!queryPath.trim()) {
+      setQueryResult(null)
+      setQueryError(null)
+      return
+    }
+
+    const result = queryJsonPath(parsedJson, queryPath)
+    
+    if (result.success) {
+      setQueryResult(result.result)
+      setQueryError(result.error) // This will be the "no results" message if applicable
+    } else {
+      setQueryResult(null)
+      setQueryError(result.error)
+    }
+  }, [isValid, parsedJson, queryPath])
 
   /**
    * Compare two JSON documents

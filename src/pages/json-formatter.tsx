@@ -23,9 +23,11 @@ const modeTabs: ModeTab[] = [
 ]
 
 export function JsonFormatterPage() {
-  const [mode, setMode] = useState<FormatterMode>('format')
   const [viewMode, setViewMode] = useState<'text' | 'tree'>('text')
+  const [queryViewMode, setQueryViewMode] = useState<'text' | 'tree'>('tree')
   const {
+    mode,
+    setMode,
     input,
     setInput,
     output,
@@ -39,6 +41,11 @@ export function JsonFormatterPage() {
     copyToClipboard,
     downloadJson,
     isCopied,
+    queryPath,
+    setQueryPath,
+    queryResult,
+    queryError,
+    executeQuery,
   } = useJsonFormatter()
 
   return (
@@ -104,14 +111,23 @@ export function JsonFormatterPage() {
               {/* Input and Output Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Input Area */}
-                <JsonInput
-                  value={input}
-                  onChange={setInput}
-                  error={error}
-                  label="Input JSON"
-                  placeholder="วาง JSON ที่นี่..."
-                  enableHighlight={true}
-                />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Input JSON
+                    </label>
+                    {/* Empty space to match Output's toggle height */}
+                    <div className="h-[34px]"></div>
+                  </div>
+                  <JsonInput
+                    value={input}
+                    onChange={setInput}
+                    error={error}
+                    placeholder="วาง JSON ที่นี่..."
+                    enableHighlight={true}
+                  />
+                </div>
 
                 {/* Output Area */}
                 <div className="space-y-3">
@@ -185,7 +201,7 @@ export function JsonFormatterPage() {
                   JSON ซ้าย
                 </label>
                 <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none overflow-auto focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="วาง JSON ชุดแรก..."
                 />
               </div>
@@ -197,7 +213,7 @@ export function JsonFormatterPage() {
                   JSON ขวา
                 </label>
                 <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none overflow-auto focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="วาง JSON ชุดที่สอง..."
                 />
               </div>
@@ -207,29 +223,96 @@ export function JsonFormatterPage() {
           {/* Query Mode */}
           {mode === 'query' && (
             <div className="space-y-6">
-              {/* JSON Input */}
+              {/* JSON Input with View Toggle */}
               <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  Input JSON
-                </label>
-                <textarea
-                  className="w-full h-48 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  placeholder="วาง JSON ที่นี่..."
-                />
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    Input JSON
+                  </label>
+                  
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                    <button
+                      onClick={() => setQueryViewMode('text')}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
+                        transition-all duration-200
+                        ${queryViewMode === 'text'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                        }
+                      `}
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      Text
+                    </button>
+                    <button
+                      onClick={() => setQueryViewMode('tree')}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
+                        transition-all duration-200
+                        ${queryViewMode === 'tree'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                        }
+                      `}
+                    >
+                      <TreePine className="w-3.5 h-3.5" />
+                      Tree
+                    </button>
+                  </div>
+                </div>
+
+                {/* Input Display */}
+                {queryViewMode === 'text' ? (
+                  <JsonInput
+                    value={input}
+                    onChange={setInput}
+                    error={error}
+                    placeholder="วาง JSON ที่นี่..."
+                  />
+                ) : (
+                  <JsonTreeView
+                    data={parsedJson}
+                    onPathClick={(path) => {
+                      navigator.clipboard.writeText(path)
+                    }}
+                  />
+                )}
               </div>
 
-              {/* JSONPath Input */}
+              {/* JSONPath Input with Execute Button */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
                   <span className="w-2 h-2 rounded-full bg-cyan-500" />
                   JSONPath Query
                 </label>
-                <input
-                  type="text"
-                  className="w-full p-3 bg-muted/30 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  placeholder="$.store.book[0].title"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={queryPath}
+                    onChange={(e) => setQueryPath(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        executeQuery()
+                      }
+                    }}
+                    className="flex-1 p-3 bg-muted/30 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                    placeholder="$.store.book[0].title"
+                  />
+                  <Button
+                    onClick={executeQuery}
+                    disabled={!isValid || !queryPath.trim()}
+                    className="px-6"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Query
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ตัวอย่าง: $.users[0].name, $.config.indentSize, $.features[*]
+                </p>
               </div>
 
               {/* Query Result */}
@@ -238,11 +321,31 @@ export function JsonFormatterPage() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   ผลลัพธ์
                 </label>
-                <textarea
-                  className="w-full h-32 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none transition-all"
-                  placeholder="ผลลัพธ์จะแสดงที่นี่..."
-                  readOnly
-                />
+                
+                {queryError && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                      {queryError}
+                    </p>
+                  </div>
+                )}
+                
+                {!queryError && queryResult !== null && (
+                  <JsonTreeView
+                    data={queryResult}
+                    onPathClick={(path) => {
+                      navigator.clipboard.writeText(path)
+                    }}
+                  />
+                )}
+                
+                {!queryError && queryResult === null && !queryPath && (
+                  <div className="p-4 bg-muted/30 border border-border rounded-xl h-32 flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground text-center">
+                      ใส่ JSONPath query และกด Enter หรือคลิกปุ่ม Query
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
