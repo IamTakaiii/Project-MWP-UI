@@ -106,7 +106,7 @@
     - Diff output with color coding
     - _Requirements: 9.1, 9.2, 9.3, 9.5_
 
-- [ ] 9. Final checkpoint
+- [x] 9. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
   - ทดสอบ responsive layout บน mobile
 
