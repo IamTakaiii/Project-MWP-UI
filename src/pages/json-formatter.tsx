@@ -6,6 +6,7 @@ import { JsonInput } from '@/components/json-input'
 import { JsonViewer } from '@/components/json-viewer'
 import { JsonTreeView } from '@/components/json-tree-view'
 import { ActionButtons } from '@/components/action-buttons'
+import { DiffOutput } from '@/components/diff-output'
 import { useJsonFormatter } from '@/hooks/use-json-formatter'
 
 type FormatterMode = 'format' | 'diff' | 'query'
@@ -46,6 +47,13 @@ export function JsonFormatterPage() {
     queryResult,
     queryError,
     executeQuery,
+    leftInput,
+    setLeftInput,
+    rightInput,
+    setRightInput,
+    leftError,
+    rightError,
+    diffResults,
   } = useJsonFormatter()
 
   return (
@@ -193,30 +201,48 @@ export function JsonFormatterPage() {
 
           {/* Diff Mode */}
           {mode === 'diff' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Input */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  JSON ซ้าย
-                </label>
-                <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none overflow-auto focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  placeholder="วาง JSON ชุดแรก..."
-                />
+            <div className="space-y-6">
+              {/* Two Input Areas */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Input */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    JSON ซ้าย
+                  </label>
+                  <JsonInput
+                    value={leftInput}
+                    onChange={setLeftInput}
+                    error={leftError}
+                    placeholder="วาง JSON ชุดแรก..."
+                  />
+                </div>
+
+                {/* Right Input */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    JSON ขวา
+                  </label>
+                  <JsonInput
+                    value={rightInput}
+                    onChange={setRightInput}
+                    error={rightError}
+                    placeholder="วาง JSON ชุดที่สอง..."
+                  />
+                </div>
               </div>
 
-              {/* Right Input */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" />
-                  JSON ขวา
-                </label>
-                <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none overflow-auto focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  placeholder="วาง JSON ชุดที่สอง..."
-                />
-              </div>
+              {/* Diff Output */}
+              {(leftInput && rightInput) && (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    ความแตกต่าง
+                  </label>
+                  <DiffOutput results={diffResults} />
+                </div>
+              )}
             </div>
           )}
 

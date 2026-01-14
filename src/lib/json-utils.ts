@@ -23,6 +23,19 @@ export interface QueryResult {
   error: string | null
 }
 
+export interface DiffResult {
+  type: 'added' | 'removed' | 'modified' | 'unchanged'
+  path: string
+  leftValue?: unknown
+  rightValue?: unknown
+}
+
+export interface DiffComparisonResult {
+  success: boolean
+  results: DiffResult[]
+  error: string | null
+}
+
 /**
  * Validates JSON string and returns detailed error information
  * Requirements: 2.1, 2.2, 2.3
@@ -205,4 +218,171 @@ export function queryJsonPath(json: unknown, path: string): QueryResult {
       error: `JSONPath ไม่ถูกต้อง: ${error.message}`,
     }
   }
+}
+
+/**
+ * Deep comparison of two JSON values to find differences
+ * Requirements: 9.2, 9.4, 9.5
+ */
+export function compareJson(
+  left: string,
+  right: string
+): DiffComparisonResult {
+  // Validate both inputs
+  const leftValidation = validateJson(left)
+  const rightValidation = validateJson(right)
+
+  if (!leftValidation.isValid) {
+    return {
+      success: false,
+      results: [],
+      error: `JSON ซ้าย: ${leftValidation.error}`,
+    }
+  }
+
+  if (!rightValidation.isValid) {
+    return {
+      success: false,
+      results: [],
+      error: `JSON ขวา: ${rightValidation.error}`,
+    }
+  }
+
+  try {
+    const leftParsed = JSON.parse(left)
+    const rightParsed = JSON.parse(right)
+
+    const results: DiffResult[] = []
+
+    // Perform deep comparison
+    deepCompare(leftParsed, rightParsed, '$', results)
+
+    return {
+      success: true,
+      results,
+      error: null,
+    }
+  } catch (e) {
+    const error = e as Error
+    return {
+      success: false,
+      results: [],
+      error: `เกิดข้อผิดพลาดในการเปรียบเทียบ: ${error.message}`,
+    }
+  }
+}
+
+/**
+ * Recursively compare two values and collect differences
+ */
+function deepCompare(
+  left: unknown,
+  right: unknown,
+  path: string,
+  results: DiffResult[]
+): void {
+  // Check if values are identical
+  if (JSON.stringify(left) === JSON.stringify(right)) {
+    return
+  }
+
+  // Get types
+  const leftType = getValueType(left)
+  const rightType = getValueType(right)
+
+  // If types differ, it's a modification
+  if (leftType !== rightType) {
+    results.push({
+      type: 'modified',
+      path,
+      leftValue: left,
+      rightValue: right,
+    })
+    return
+  }
+
+  // Handle objects
+  if (leftType === 'object' && rightType === 'object') {
+    const leftObj = left as Record<string, unknown>
+    const rightObj = right as Record<string, unknown>
+
+    const leftKeys = Object.keys(leftObj)
+    const rightKeys = Object.keys(rightObj)
+    const allKeys = new Set([...leftKeys, ...rightKeys])
+
+    for (const key of allKeys) {
+      const newPath = `${path}.${key}`
+      const hasLeft = key in leftObj
+      const hasRight = key in rightObj
+
+      if (hasLeft && !hasRight) {
+        // Key removed
+        results.push({
+          type: 'removed',
+          path: newPath,
+          leftValue: leftObj[key],
+        })
+      } else if (!hasLeft && hasRight) {
+        // Key added
+        results.push({
+          type: 'added',
+          path: newPath,
+          rightValue: rightObj[key],
+        })
+      } else {
+        // Key exists in both, recurse
+        deepCompare(leftObj[key], rightObj[key], newPath, results)
+      }
+    }
+    return
+  }
+
+  // Handle arrays
+  if (leftType === 'array' && rightType === 'array') {
+    const leftArr = left as unknown[]
+    const rightArr = right as unknown[]
+
+    const maxLength = Math.max(leftArr.length, rightArr.length)
+
+    for (let i = 0; i < maxLength; i++) {
+      const newPath = `${path}[${i}]`
+
+      if (i < leftArr.length && i < rightArr.length) {
+        // Both have element at this index
+        deepCompare(leftArr[i], rightArr[i], newPath, results)
+      } else if (i < leftArr.length) {
+        // Left has element, right doesn't
+        results.push({
+          type: 'removed',
+          path: newPath,
+          leftValue: leftArr[i],
+        })
+      } else {
+        // Right has element, left doesn't
+        results.push({
+          type: 'added',
+          path: newPath,
+          rightValue: rightArr[i],
+        })
+      }
+    }
+    return
+  }
+
+  // Primitive values that differ
+  results.push({
+    type: 'modified',
+    path,
+    leftValue: left,
+    rightValue: right,
+  })
+}
+
+/**
+ * Get the type of a value for comparison purposes
+ */
+function getValueType(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
 }

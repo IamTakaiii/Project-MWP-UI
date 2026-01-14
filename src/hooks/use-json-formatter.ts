@@ -1,23 +1,18 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import {
   validateJson,
   prettifyJson,
   minifyJson,
   parseJson,
   queryJsonPath,
+  compareJson,
   SAMPLE_JSON,
   type ValidationResult,
+  type DiffResult,
 } from '@/lib/json-utils'
 
 export type FormatterMode = 'format' | 'diff' | 'query'
 export type OutputView = 'text' | 'tree'
-
-export interface DiffResult {
-  type: 'added' | 'removed' | 'modified' | 'unchanged'
-  path: string
-  leftValue?: unknown
-  rightValue?: unknown
-}
 
 export interface UseJsonFormatterReturn {
   // Mode
@@ -240,10 +235,23 @@ export function useJsonFormatter(): UseJsonFormatterReturn {
       return
     }
 
-    // Diff comparison will be implemented in task 8
-    // For now, just set placeholder
-    setDiffResults([])
-  }, [leftValidation.isValid, rightValidation.isValid])
+    const result = compareJson(leftInput, rightInput)
+    
+    if (result.success) {
+      setDiffResults(result.results)
+    } else {
+      setDiffResults([])
+    }
+  }, [leftInput, rightInput, leftValidation.isValid, rightValidation.isValid])
+
+  // Auto-compare when both inputs are valid
+  useEffect(() => {
+    if (mode === 'diff' && leftInput && rightInput && leftValidation.isValid && rightValidation.isValid) {
+      compare()
+    } else if (mode === 'diff') {
+      setDiffResults([])
+    }
+  }, [mode, leftInput, rightInput, leftValidation.isValid, rightValidation.isValid, compare])
 
   return {
     // Mode

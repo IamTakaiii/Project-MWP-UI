@@ -89,8 +89,8 @@
     - Query result display
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 8. Implement Diff Mode
-  - [ ] 8.1 เพิ่ม diff logic ใน json-utils
+- [x] 8. Implement Diff Mode
+  - [x] 8.1 เพิ่ม diff logic ใน json-utils
     - Deep comparison algorithm
     - Return diff results with types
     - _Requirements: 9.2, 9.4, 9.5_
@@ -100,7 +100,7 @@
   - [ ]* 8.3 Write property test for diff symmetry
     - **Property 6: Diff Symmetry**
     - **Validates: Requirements 9.2**
-  - [ ] 8.4 สร้าง Diff Mode UI
+  - [x] 8.4 สร้าง Diff Mode UI
     - Two input areas (left/right)
     - Compare button
     - Diff output with color coding
