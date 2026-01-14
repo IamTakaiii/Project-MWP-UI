@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, FileJson, GitCompare, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { JsonInput } from '@/components/json-input'
+import { JsonViewer } from '@/components/json-viewer'
+import { ActionButtons } from '@/components/action-buttons'
+import { useJsonFormatter } from '@/hooks/use-json-formatter'
 
 type FormatterMode = 'format' | 'diff' | 'query'
 
@@ -19,6 +23,20 @@ const modeTabs: ModeTab[] = [
 
 export function JsonFormatterPage() {
   const [mode, setMode] = useState<FormatterMode>('format')
+  const {
+    input,
+    setInput,
+    output,
+    error,
+    isValid,
+    prettify,
+    minify,
+    clear,
+    loadSample,
+    copyToClipboard,
+    downloadJson,
+    isCopied,
+  } = useJsonFormatter()
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -66,29 +84,37 @@ export function JsonFormatterPage() {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           {/* Format Mode */}
           {mode === 'format' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Input Area */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  Input JSON
-                </label>
-                <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  placeholder="วาง JSON ที่นี่..."
-                />
-              </div>
+            <div className="space-y-6">
+              {/* Action Buttons */}
+              <ActionButtons
+                onPrettify={prettify}
+                onMinify={minify}
+                onCopy={copyToClipboard}
+                onDownload={downloadJson}
+                onClear={clear}
+                onLoadSample={loadSample}
+                disabled={!isValid}
+                hasOutput={!!output}
+                isCopied={isCopied}
+              />
 
-              {/* Output Area */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  Output
-                </label>
-                <textarea
-                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none transition-all"
+              {/* Input and Output Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Input Area */}
+                <JsonInput
+                  value={input}
+                  onChange={setInput}
+                  error={error}
+                  label="Input JSON"
+                  placeholder="วาง JSON ที่นี่..."
+                  enableHighlight={true}
+                />
+
+                {/* Output Area with Syntax Highlighting */}
+                <JsonViewer
+                  value={output}
+                  label="Output"
                   placeholder="ผลลัพธ์จะแสดงที่นี่..."
-                  readOnly
                 />
               </div>
             </div>

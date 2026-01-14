@@ -42,19 +42,19 @@
 - [ ] 3. Checkpoint - ตรวจสอบ core functionality
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement Format Mode UI
-  - [ ] 4.1 สร้าง JsonInput component
+- [x] 4. Implement Format Mode UI
+  - [x] 4.1 สร้าง JsonInput component
     - Textarea พร้อม error display
     - Placeholder hint เมื่อว่าง
     - _Requirements: 1.1, 1.4, 2.4_
-  - [ ] 4.2 สร้าง ActionButtons component
+  - [x] 4.2 สร้าง ActionButtons component
     - ปุ่ม Prettify, Minify, Copy, Download, Clear, Sample
     - _Requirements: 3.1, 4.1, 5.1, 6.1, 7.1, 10.1_
-  - [ ] 4.3 Implement copy to clipboard
+  - [x] 4.3 Implement copy to clipboard
     - ใช้ navigator.clipboard API
     - แสดง toast notification
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 4.4 Implement download JSON
+  - [x] 4.4 Implement download JSON
     - สร้าง blob และ download link
     - ใช้ filename "formatted.json"
     - _Requirements: 10.1, 10.2, 10.3_

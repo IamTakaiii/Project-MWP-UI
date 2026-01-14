@@ -41,6 +41,9 @@ export interface UseJsonFormatterReturn {
   minify: () => void
   clear: () => void
   loadSample: () => void
+  copyToClipboard: () => Promise<void>
+  downloadJson: () => void
+  isCopied: boolean
 
   // Query mode
   queryPath: string
@@ -82,6 +85,9 @@ export function useJsonFormatter(): UseJsonFormatterReturn {
   const [leftInput, setLeftInput] = useState('')
   const [rightInput, setRightInput] = useState('')
   const [diffResults, setDiffResults] = useState<DiffResult[]>([])
+
+  // Copy state
+  const [isCopied, setIsCopied] = useState(false)
 
   // Validation - computed from input
   const validation = useMemo(() => validateJson(input), [input])
@@ -143,6 +149,59 @@ export function useJsonFormatter(): UseJsonFormatterReturn {
   }, [])
 
   /**
+   * Copy output to clipboard
+   * Requirements: 5.1, 5.2, 5.3
+   */
+  const copyToClipboard = useCallback(async () => {
+    if (!output) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(output)
+      setIsCopied(true)
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
+  }, [output])
+
+  /**
+   * Download output as JSON file
+   * Requirements: 10.1, 10.2, 10.3
+   */
+  const downloadJson = useCallback(() => {
+    if (!output) {
+      return
+    }
+
+    try {
+      // Create blob from output
+      const blob = new Blob([output], { type: 'application/json' })
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'formatted.json'
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to download:', error)
+    }
+  }, [output])
+
+  /**
    * Execute JSONPath query
    * Requirements: 8.2, 8.3, 8.4, 8.5
    */
@@ -197,6 +256,9 @@ export function useJsonFormatter(): UseJsonFormatterReturn {
     minify,
     clear,
     loadSample,
+    copyToClipboard,
+    downloadJson,
+    isCopied,
 
     // Query mode
     queryPath,
