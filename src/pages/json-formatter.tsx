@@ -1,0 +1,169 @@
+import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { ArrowLeft, FileJson, GitCompare, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
+type FormatterMode = 'format' | 'diff' | 'query'
+
+interface ModeTab {
+  id: FormatterMode
+  label: string
+  icon: React.ReactNode
+}
+
+const modeTabs: ModeTab[] = [
+  { id: 'format', label: 'Format', icon: <FileJson className="w-4 h-4" /> },
+  { id: 'diff', label: 'Diff', icon: <GitCompare className="w-4 h-4" /> },
+  { id: 'query', label: 'Query', icon: <Search className="w-4 h-4" /> },
+]
+
+export function JsonFormatterPage() {
+  const [mode, setMode] = useState<FormatterMode>('format')
+
+  return (
+    <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <header className="mb-6">
+          <Link to="/">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              กลับหน้าหลัก
+            </Button>
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
+              <FileJson className="w-5 h-5" />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              JSON Formatter
+            </h1>
+          </div>
+        </header>
+
+        {/* Mode Selector Tabs */}
+        <div className="bg-card border border-border rounded-2xl p-1 mb-6 inline-flex">
+          {modeTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setMode(tab.id)}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+                transition-all duration-200
+                ${mode === tab.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }
+              `}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          {/* Format Mode */}
+          {mode === 'format' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Input Area */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Input JSON
+                </label>
+                <div className="relative">
+                  <textarea
+                    className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="วาง JSON ที่นี่..."
+                  />
+                </div>
+              </div>
+
+              {/* Output Area */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Output
+                </label>
+                <div className="relative">
+                  <textarea
+                    className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none"
+                    placeholder="ผลลัพธ์จะแสดงที่นี่..."
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Diff Mode */}
+          {mode === 'diff' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  JSON ซ้าย
+                </label>
+                <textarea
+                  className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="วาง JSON ชุดแรก..."
+                />
+              </div>
+
+              {/* Right Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  JSON ขวา
+                </label>
+                <textarea
+                  className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="วาง JSON ชุดที่สอง..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Query Mode */}
+          {mode === 'query' && (
+            <div className="space-y-6">
+              {/* JSON Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Input JSON
+                </label>
+                <textarea
+                  className="w-full h-48 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="วาง JSON ที่นี่..."
+                />
+              </div>
+
+              {/* JSONPath Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  JSONPath Query
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-3 bg-muted/50 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="$.store.book[0].title"
+                />
+              </div>
+
+              {/* Query Result */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  ผลลัพธ์
+                </label>
+                <textarea
+                  className="w-full h-32 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none"
+                  placeholder="ผลลัพธ์จะแสดงที่นี่..."
+                  readOnly
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -4,6 +4,7 @@ import { HomePage } from '@/pages/home'
 import { WorklogPage } from '@/pages/worklog'
 import { HistoryPage } from '@/pages/history'
 import { SSEMonitorPage } from '@/pages/sse-monitor'
+import { JsonFormatterPage } from '@/pages/json-formatter'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -38,8 +39,15 @@ const sseMonitorRoute = createRoute({
   component: SSEMonitorPage,
 })
 
+// JSON Formatter route
+const jsonFormatterRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/json-formatter',
+  component: JsonFormatterPage,
+})
+
 // Route tree
-const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute])
+const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute])
 
 // Create router
 export const router = createRouter({

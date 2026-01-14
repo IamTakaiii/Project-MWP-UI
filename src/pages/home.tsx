@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Clock, History, Rocket, Calendar, BarChart3, Settings, Terminal } from 'lucide-react'
+import { Clock, History, Rocket, Calendar, BarChart3, Settings, Terminal, FileJson } from 'lucide-react'
 
 interface AppCard {
   id: string
@@ -73,6 +73,15 @@ const apps: AppCard[] = [
     icon: <Terminal className="w-8 h-8" />,
     href: '/sse-monitor',
     gradient: 'from-emerald-500 to-teal-400',
+    available: true,
+  },
+  {
+    id: 'json-formatter',
+    title: 'JSON Formatter',
+    description: 'จัดรูปแบบ ตรวจสอบ เปรียบเทียบ และ query JSON',
+    icon: <FileJson className="w-8 h-8" />,
+    href: '/json-formatter',
+    gradient: 'from-amber-500 to-orange-400',
     available: true,
   },
 ]
