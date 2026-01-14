@@ -1,0 +1,27 @@
+/**
+ * Services Index
+ * 
+ * Export all services from a single entry point.
+ * Add new services here as your workspace grows.
+ */
+
+// Core API utilities
+export { ApiClient, ApiError } from './api'
+export type { ServiceConfig, ServicesConfig, RequestOptions } from './api'
+
+// Jira Service
+export { jiraService, JiraService } from './jira'
+export type {
+  JiraCredentials,
+  JiraIssue,
+  JiraSearchResponse,
+  TaskFilters,
+  WorklogData,
+  WorklogEntry,
+  WorklogHistoryResponse,
+  DailyWorklog,
+} from './jira'
+
+// Add more services here:
+// export { calendarService } from './calendar'
+// export { notesService } from './notes'
