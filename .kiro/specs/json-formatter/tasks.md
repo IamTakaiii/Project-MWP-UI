@@ -18,8 +18,8 @@
     - เพิ่ม JSON Formatter app card
     - _Requirements: 1.1_
 
-- [ ] 2. สร้าง core utilities และ hook
-  - [ ] 2.1 สร้าง `src/lib/json-utils.ts`
+- [x] 2. สร้าง core utilities และ hook
+  - [x] 2.1 สร้าง `src/lib/json-utils.ts`
     - สร้าง validateJson function
     - สร้าง prettifyJson function
     - สร้าง minifyJson function
@@ -33,7 +33,7 @@
   - [ ]* 2.4 Write property test for invalid JSON error handling
     - **Property 3: Invalid JSON Error Handling**
     - **Validates: Requirements 3.4, 4.3**
-  - [ ] 2.5 สร้าง `src/hooks/use-json-formatter.ts`
+  - [x] 2.5 สร้าง `src/hooks/use-json-formatter.ts`
     - สร้าง useJsonFormatter hook
     - จัดการ state สำหรับ input, output, errors
     - implement prettify, minify, clear, loadSample actions

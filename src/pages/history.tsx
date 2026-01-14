@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Search,
   Calendar,
+  CalendarClock,
   CalendarDays,
   Pencil,
   Trash2,
@@ -255,9 +256,35 @@ export function HistoryPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-[1000px] mx-auto">
+      <div className="max-w-[1000px] mx-auto items-center justify-between mb-4">
         {/* Header */}
-        <header className="mb-8">
+        <header className="mb-6">
+          <Link to="/">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              กลับหน้าหลัก
+            </Button>
+          </Link>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
+                <CalendarClock className="w-5 h-5" />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Worklog History
+              </h1>
+            </div>
+            {isAuthenticated && (
+              <Link to="/worklog">
+                <Button className="bg-success hover:bg-success/90 gap-2">
+                  <Plus className="h-4 w-4" />
+                  เพิ่ม Worklog
+                </Button>
+              </Link>
+            )}
+          </div>
+        </header>
+        {/* <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link to="/">
@@ -283,7 +310,7 @@ export function HistoryPage() {
               </Link>
             )}
           </div>
-        </header>
+        </header> */}
 
         {/* Date Filter Card */}
         <div className="bg-card/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
