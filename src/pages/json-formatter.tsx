@@ -66,57 +66,57 @@ export function JsonFormatterPage() {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           {/* Format Mode */}
           {mode === 'format' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Input Area */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
                   Input JSON
                 </label>
-                <div className="relative">
-                  <textarea
-                    className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="วาง JSON ที่นี่..."
-                  />
-                </div>
+                <textarea
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                  placeholder="วาง JSON ที่นี่..."
+                />
               </div>
 
               {/* Output Area */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   Output
                 </label>
-                <div className="relative">
-                  <textarea
-                    className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none"
-                    placeholder="ผลลัพธ์จะแสดงที่นี่..."
-                    readOnly
-                  />
-                </div>
+                <textarea
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none transition-all"
+                  placeholder="ผลลัพธ์จะแสดงที่นี่..."
+                  readOnly
+                />
               </div>
             </div>
           )}
 
           {/* Diff Mode */}
           {mode === 'diff' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
                   JSON ซ้าย
                 </label>
                 <textarea
-                  className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="วาง JSON ชุดแรก..."
                 />
               </div>
 
               {/* Right Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" />
                   JSON ขวา
                 </label>
                 <textarea
-                  className="w-full h-80 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full h-80 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="วาง JSON ชุดที่สอง..."
                 />
               </div>
@@ -127,35 +127,38 @@ export function JsonFormatterPage() {
           {mode === 'query' && (
             <div className="space-y-6">
               {/* JSON Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
                   Input JSON
                 </label>
                 <textarea
-                  className="w-full h-48 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full h-48 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="วาง JSON ที่นี่..."
                 />
               </div>
 
               {/* JSONPath Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-cyan-500" />
                   JSONPath Query
                 </label>
                 <input
                   type="text"
-                  className="w-full p-3 bg-muted/50 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full p-3 bg-muted/30 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   placeholder="$.store.book[0].title"
                 />
               </div>
 
               {/* Query Result */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   ผลลัพธ์
                 </label>
                 <textarea
-                  className="w-full h-32 p-4 bg-muted/50 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none"
+                  className="w-full h-32 p-4 bg-muted/30 border border-border rounded-xl font-mono text-sm resize-none focus:outline-none transition-all"
                   placeholder="ผลลัพธ์จะแสดงที่นี่..."
                   readOnly
                 />
