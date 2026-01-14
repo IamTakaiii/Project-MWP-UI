@@ -26,9 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useLocalStorage } from '@/hooks'
 import { jiraService, type WorklogEntry, type DailyWorklog } from '@/services'
-import { STORAGE_KEYS } from '@/lib/constants'
+import { authService } from '@/services/auth.service'
 import { WorklogDialog, DeleteConfirmDialog, type WorklogFormData } from '@/components/worklog-dialog'
 import { cn } from '@/lib/utils'
 
@@ -51,13 +50,10 @@ function formatTimeRange(started: string, timeSpentSeconds: number): string {
 }
 
 export function HistoryPage() {
-  // Credentials from localStorage
-  const [jiraUrl] = useLocalStorage(STORAGE_KEYS.JIRA_URL, '')
-  const [email] = useLocalStorage(STORAGE_KEYS.EMAIL, '')
-  const [apiToken] = useLocalStorage(STORAGE_KEYS.API_TOKEN, '')
-
-  const credentials = { jiraUrl, email, apiToken }
-  const hasCredentials = jiraUrl && email && apiToken
+  // Session state
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [jiraUrl, setJiraUrl] = useState('')
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>('daily')
@@ -130,10 +126,29 @@ export function HistoryPage() {
   const isDateRangeValid = startDate <= endDate
   const dateError = !isDateRangeValid ? 'วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด' : null
 
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      setIsCheckingAuth(true)
+      try {
+        const session = await authService.getCurrentSession()
+        setIsAuthenticated(session.authenticated)
+        if (session.authenticated && session.jiraUrl) {
+          setJiraUrl(session.jiraUrl)
+        }
+      } catch (error) {
+        setIsAuthenticated(false)
+      } finally {
+        setIsCheckingAuth(false)
+      }
+    }
+    checkAuth()
+  }, [])
+
   // Fetch worklogs
   const fetchData = async () => {
-    if (!hasCredentials) {
-      setError('กรุณากรอก JIRA credentials ที่หน้า Worklog ก่อน')
+    if (!isAuthenticated) {
+      setError('กรุณาเข้าสู่ระบบก่อน')
       return
     }
 
@@ -146,7 +161,7 @@ export function HistoryPage() {
     setError(null)
 
     try {
-      const data = await jiraService.fetchWorklogHistory(credentials, startDate, endDate)
+      const data = await jiraService.fetchWorklogHistory(startDate, endDate)
       setWorklogs(data.worklogs || [])
       setCurrentDayIndex(0)
     } catch (err) {
@@ -158,12 +173,12 @@ export function HistoryPage() {
     }
   }
 
-  // Auto fetch on mount if has credentials
+  // Auto fetch on mount if authenticated
   useEffect(() => {
-    if (hasCredentials) {
+    if (isAuthenticated && !isCheckingAuth) {
       fetchData()
     }
-  }, [])
+  }, [isAuthenticated, isCheckingAuth])
 
   // Navigation handlers (now correct: index 0 = oldest day)
   const goToPreviousDay = () => {
@@ -201,7 +216,6 @@ export function HistoryPage() {
     if (selectedWorklog) {
       // Update existing
       await jiraService.updateWorklog(
-        credentials,
         selectedWorklog.issueKey,
         selectedWorklog.id,
         {
@@ -213,7 +227,6 @@ export function HistoryPage() {
     } else {
       // Create new
       await jiraService.createWorklog(
-        credentials,
         formData.issueKey,
         {
           timeSpent: formData.timeSpent,
@@ -225,21 +238,20 @@ export function HistoryPage() {
     
     // Refresh data
     await fetchData()
-  }, [selectedWorklog, credentials])
+  }, [selectedWorklog])
 
   // Delete worklog
   const handleDeleteWorklog = useCallback(async () => {
     if (!selectedWorklog) return
     
     await jiraService.deleteWorklog(
-      credentials,
       selectedWorklog.issueKey,
       selectedWorklog.id
     )
     
     // Refresh data
     await fetchData()
-  }, [selectedWorklog, credentials])
+  }, [selectedWorklog])
 
   return (
     <div className="p-4 md:p-8">
@@ -262,7 +274,7 @@ export function HistoryPage() {
                 </p>
               </div>
             </div>
-            {hasCredentials && (
+            {isAuthenticated && (
               <Link to="/worklog">
                 <Button className="bg-success hover:bg-success/90 gap-2">
                   <Plus className="h-4 w-4" />
@@ -340,7 +352,7 @@ export function HistoryPage() {
             </div>
             <Button
               onClick={fetchData}
-              disabled={isLoading || !hasCredentials || !isDateRangeValid}
+              disabled={isLoading || !isAuthenticated || !isDateRangeValid}
               className="bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
             >
               <Search className="h-4 w-4 mr-2" />
@@ -365,7 +377,7 @@ export function HistoryPage() {
         )}
 
         {/* No Credentials */}
-        {!hasCredentials && (
+        {!isAuthenticated && !isCheckingAuth && (
           <div className="text-center py-12 bg-card/50 border border-white/10 rounded-2xl">
             <p className="text-muted-foreground mb-4">
               กรุณากรอก JIRA credentials ที่หน้า Worklog ก่อน
@@ -385,7 +397,7 @@ export function HistoryPage() {
         )}
 
         {/* No Data */}
-        {!isLoading && hasCredentials && dailyWorklogs.length === 0 && !error && (
+        {!isLoading && isAuthenticated && dailyWorklogs.length === 0 && !error && (
           <div className="text-center py-12 bg-card/50 border border-white/10 rounded-2xl">
             <p className="text-muted-foreground">ไม่พบ worklog ในช่วงวันที่เลือก</p>
           </div>
@@ -626,7 +638,7 @@ export function HistoryPage() {
         {/* Footer */}
         <footer className="text-center mt-8 py-4">
           <p className="text-sm text-muted-foreground">
-            ⚠️ กรุณาเก็บ API Token เป็นความลับ
+            🔒 ข้อมูล credentials ถูกเก็บไว้ใน session ที่ปลอดภัย
           </p>
         </footer>
       </div>

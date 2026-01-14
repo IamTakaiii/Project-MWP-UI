@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
-import { jiraService, type JiraCredentials, type JiraIssue, type TaskFilters } from '@/services'
+import { jiraService, type JiraIssue, type TaskFilters } from '@/services'
 import { DEFAULT_VALUES } from '@/lib/constants'
 
 /**
  * Custom hook for managing JIRA tasks
+ * Uses session-based authentication (no credentials needed)
  */
 export function useTasks() {
   const [tasks, setTasks] = useState<JiraIssue[]>([])
@@ -14,21 +15,13 @@ export function useTasks() {
   const [error, setError] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async (
-    credentials: JiraCredentials,
     filters?: Partial<TaskFilters>
   ) => {
-    const { jiraUrl, email, apiToken } = credentials
-
-    if (!jiraUrl || !email || !apiToken) {
-      setError('กรุณากรอก JIRA URL, Email และ API Token ก่อน')
-      return
-    }
-
     setIsLoading(true)
     setError(null)
 
     try {
-      const data = await jiraService.fetchMyTasks(credentials, {
+      const data = await jiraService.fetchMyTasks({
         searchText: filters?.searchText ?? searchText,
         status: filters?.status ?? statusFilter,
       })

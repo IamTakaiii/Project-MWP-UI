@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react'
-import { jiraService, type JiraCredentials } from '@/services'
+import { jiraService } from '@/services'
 import { generateDateRange, createWorklogTimestamp } from '@/lib/date-utils'
 import type { LogEntry, WorklogResult } from '@/types'
 
 interface WorklogParams {
-  credentials: JiraCredentials
   taskId: string
   startDate: string
   endDate: string
@@ -31,7 +30,6 @@ export function useWorklog() {
   }, [])
 
   const createWorklogs = useCallback(async ({
-    credentials,
     taskId,
     startDate,
     endDate,
@@ -65,7 +63,7 @@ export function useWorklog() {
 
       try {
         const started = createWorklogTimestamp(date, startTime)
-        await jiraService.createWorklog(credentials, taskId, {
+        await jiraService.createWorklog(taskId, {
           timeSpent,
           started,
           comment,

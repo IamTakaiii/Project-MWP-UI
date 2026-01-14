@@ -102,6 +102,7 @@ export class ApiClient {
         },
         body: data ? JSON.stringify(data) : undefined,
         signal: options?.signal || controller.signal,
+        credentials: 'include', // Include cookies for session management
       })
 
       clearTimeout(timeoutId)

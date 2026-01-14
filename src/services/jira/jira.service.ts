@@ -6,7 +6,6 @@
 
 import { ApiClient, getServiceConfig } from '../api'
 import type {
-  JiraCredentials,
   JiraSearchResponse,
   WorklogData,
   TaskFilters,
@@ -44,9 +43,9 @@ class JiraService extends ApiClient {
 
   /**
    * Create a worklog entry for a Jira issue
+   * Uses session-based authentication (no credentials needed)
    */
   async createWorklog(
-    credentials: JiraCredentials,
     taskId: string,
     worklogData: WorklogData
   ): Promise<unknown> {
@@ -59,7 +58,6 @@ class JiraService extends ApiClient {
     }
 
     return this.post('/api/worklog', {
-      ...credentials,
       taskId,
       payload,
     })
@@ -67,9 +65,9 @@ class JiraService extends ApiClient {
 
   /**
    * Update an existing worklog
+   * Uses session-based authentication (no credentials needed)
    */
   async updateWorklog(
-    credentials: JiraCredentials,
     issueKey: string,
     worklogId: string,
     worklogData: WorklogData
@@ -85,7 +83,6 @@ class JiraService extends ApiClient {
     }
 
     return this.put('/api/worklog', {
-      ...credentials,
       issueKey,
       worklogId,
       payload,
@@ -94,14 +91,13 @@ class JiraService extends ApiClient {
 
   /**
    * Delete a worklog entry
+   * Uses session-based authentication (no credentials needed)
    */
   async deleteWorklog(
-    credentials: JiraCredentials,
     issueKey: string,
     worklogId: string
   ): Promise<void> {
     await this.delete('/api/worklog', {
-      ...credentials,
       issueKey,
       worklogId,
     })
@@ -109,13 +105,12 @@ class JiraService extends ApiClient {
 
   /**
    * Fetch tasks assigned to the current user
+   * Uses session-based authentication (no credentials needed)
    */
   async fetchMyTasks(
-    credentials: JiraCredentials,
     filters: TaskFilters = { searchText: '', status: 'In Progress' }
   ): Promise<JiraSearchResponse> {
     return this.post<JiraSearchResponse>('/api/my-tasks', {
-      ...credentials,
       searchText: filters.searchText,
       status: filters.status,
     })
@@ -123,14 +118,13 @@ class JiraService extends ApiClient {
 
   /**
    * Fetch worklog history for a date range
+   * Uses session-based authentication (no credentials needed)
    */
   async fetchWorklogHistory(
-    credentials: JiraCredentials,
     startDate: string,
     endDate: string
   ): Promise<WorklogHistoryResponse> {
     return this.post<WorklogHistoryResponse>('/api/worklog/history', {
-      ...credentials,
       startDate,
       endDate,
     })
