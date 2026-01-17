@@ -43,10 +43,23 @@ function createAuthHeader(auth: SSEAuthConfig): Record<string, string> {
   }
 }
 
+// Fallback for browsers that don't support crypto.randomUUID
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback using Math.random
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 // Helper to add event
 function createEvent(type: string, data: unknown, raw?: string): SSEEvent {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     type,
     data,
     timestamp: new Date(),
