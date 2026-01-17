@@ -11,14 +11,21 @@ import type { ServiceConfig } from './config'
  * Standard API error class
  */
 export class ApiError extends Error {
+  readonly status: number
+  readonly code: string
+  readonly response?: unknown
+
   constructor(
     message: string,
-    public readonly status: number,
-    public readonly code: string,
-    public readonly response?: unknown
+    status: number,
+    code: string,
+    response?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.code = code
+    this.response = response
   }
 }
 

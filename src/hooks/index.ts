@@ -7,6 +7,6 @@ export {
   useJsonFormatter,
   type FormatterMode,
   type OutputView,
-  type DiffResult,
   type UseJsonFormatterReturn,
 } from './use-json-formatter'
+export type { DiffResult } from '@/lib/json-utils'

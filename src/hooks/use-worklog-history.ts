@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { jiraService, type JiraCredentials, type WorklogEntry, type DailyWorklog } from '@/services'
-import { format, startOfWeek, endOfWeek } from 'date-fns'
+import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns'
 
 const EIGHT_HOURS_SECONDS = 8 * 60 * 60
 
@@ -40,8 +40,10 @@ export function useWorklogHistory() {
     return Object.entries(grouped)
       .map(([date, logs]) => {
         const totalSeconds = logs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
+        const dayName = format(parseISO(date), 'EEEE')
         return {
           date,
+          dayName,
           worklogs: logs,
           totalSeconds,
           isComplete: totalSeconds >= EIGHT_HOURS_SECONDS,
@@ -68,20 +70,12 @@ export function useWorklogHistory() {
     }
   }, [worklogs])
 
-  const fetchHistory = useCallback(async (credentials: JiraCredentials) => {
-    const { jiraUrl, email, apiToken } = credentials
-
-    if (!jiraUrl || !email || !apiToken) {
-      setError('กรุณากรอก JIRA credentials ก่อน')
-      return
-    }
-
+  const fetchHistory = useCallback(async (_credentials?: JiraCredentials) => {
     setIsLoading(true)
     setError(null)
 
     try {
       const data = await jiraService.fetchWorklogHistory(
-        credentials,
         dateRange.startDate,
         dateRange.endDate
       )
