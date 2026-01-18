@@ -30,24 +30,24 @@ const apps: AppCard[] = [
     gradient: 'from-purple-500 to-pink-400',
     available: true,
   },
-  {
-    id: 'time-tracker',
-    title: 'Time Tracker',
-    description: 'จับเวลาทำงานแบบ real-time พร้อมบันทึกอัตโนมัติ',
-    icon: <Clock className="w-8 h-8" />,
-    href: '/tracker',
-    gradient: 'from-orange-500 to-amber-400',
-    available: false,
-  },
-  {
-    id: 'calendar-view',
-    title: 'Calendar View',
-    description: 'ดู worklog ในรูปแบบปฏิทิน วางแผนงานล่วงหน้า',
-    icon: <Calendar className="w-8 h-8" />,
-    href: '/calendar',
-    gradient: 'from-green-500 to-emerald-400',
-    available: false,
-  },
+  // {
+  //   id: 'time-tracker',
+  //   title: 'Time Tracker',
+  //   description: 'จับเวลาทำงานแบบ real-time พร้อมบันทึกอัตโนมัติ',
+  //   icon: <Clock className="w-8 h-8" />,
+  //   href: '/tracker',
+  //   gradient: 'from-orange-500 to-amber-400',
+  //   available: false,
+  // },
+  // {
+  //   id: 'calendar-view',
+  //   title: 'Calendar View',
+  //   description: 'ดู worklog ในรูปแบบปฏิทิน วางแผนงานล่วงหน้า',
+  //   icon: <Calendar className="w-8 h-8" />,
+  //   href: '/calendar',
+  //   gradient: 'from-green-500 to-emerald-400',
+  //   available: false,
+  // },
   {
     id: 'reports',
     title: 'Reports & Analytics',
@@ -57,15 +57,15 @@ const apps: AppCard[] = [
     gradient: 'from-rose-500 to-red-400',
     available: false,
   },
-  {
-    id: 'settings',
-    title: 'Settings',
-    description: 'ตั้งค่าการเชื่อมต่อและค่าเริ่มต้นต่างๆ',
-    icon: <Settings className="w-8 h-8" />,
-    href: '/settings',
-    gradient: 'from-slate-500 to-slate-400',
-    available: false,
-  },
+  // {
+  //   id: 'settings',
+  //   title: 'Settings',
+  //   description: 'ตั้งค่าการเชื่อมต่อและค่าเริ่มต้นต่างๆ',
+  //   icon: <Settings className="w-8 h-8" />,
+  //   href: '/settings',
+  //   gradient: 'from-slate-500 to-slate-400',
+  //   available: false,
+  // },
   {
     id: 'sse-monitor',
     title: 'SSE Monitor',
@@ -75,15 +75,15 @@ const apps: AppCard[] = [
     gradient: 'from-emerald-500 to-teal-400',
     available: true,
   },
-  {
-    id: 'json-formatter',
-    title: 'JSON Formatter',
-    description: 'จัดรูปแบบ ตรวจสอบ เปรียบเทียบ และ query JSON',
-    icon: <FileJson className="w-8 h-8" />,
-    href: '/json-formatter',
-    gradient: 'from-amber-500 to-orange-400',
-    available: true,
-  },
+  // {
+  //   id: 'json-formatter',
+  //   title: 'JSON Formatter',
+  //   description: 'จัดรูปแบบ ตรวจสอบ เปรียบเทียบ และ query JSON',
+  //   icon: <FileJson className="w-8 h-8" />,
+  //   href: '/json-formatter',
+  //   gradient: 'from-amber-500 to-orange-400',
+  //   available: true,
+  // },
 ]
 
 function AppCardComponent({ app }: { app: AppCard }) {
@@ -170,7 +170,7 @@ export function HomePage() {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            ศูนย์รวมเครื่องมือสำหรับคนขี้เกียจ
+            ใช้ไม่ใช้ก็แล้วแต่
           </p>
         </header>
 
