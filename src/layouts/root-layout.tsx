@@ -1,5 +1,4 @@
 import { Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 export default function RootLayout() {
   return (
@@ -13,9 +12,6 @@ export default function RootLayout() {
 
       {/* Page content */}
       <Outlet />
-
-      {/* Dev tools - only in development */}
-      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
     </div>
   )
 }
