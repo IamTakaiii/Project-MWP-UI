@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 /**
  * Custom hook for managing state with localStorage persistence
@@ -9,7 +9,8 @@ export function useLocalStorage<T = string>(
   initialValue: T
 ): [T, (value: T) => void] {
   // Check if we're dealing with a simple string or complex type
-  const isSimpleString = typeof initialValue === 'string'
+  // Use ref to keep this stable across renders
+  const isSimpleString = useRef(typeof initialValue === 'string').current
 
   // Initialize state with value from localStorage or initialValue
   const [value, setValue] = useState<T>(() => {

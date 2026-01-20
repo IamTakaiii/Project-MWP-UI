@@ -80,12 +80,18 @@ export function WorklogPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
-    if (!isAuthenticated) {
+    // Prevent double submission
+    if (!isAuthenticated || isLoading) {
+      return
+    }
+
+    // Validate required fields
+    if (!taskId.trim()) {
       return
     }
 
     const result = await createWorklogs({
-      taskId,
+      taskId: taskId.trim(),
       startDate,
       endDate,
       startTime,
