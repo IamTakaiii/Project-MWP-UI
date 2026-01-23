@@ -126,6 +126,13 @@ function sseProxyPlugin(): Plugin {
             'Cache-Control': 'no-cache',
           }
 
+          // Add ngrok-skip-browser-warning header if target is ngrok
+          // This bypasses ngrok's interstitial warning page
+          if (host.includes('ngrok')) {
+            headers['ngrok-skip-browser-warning'] = 'true'
+            console.log('[SSE Proxy] Added ngrok-skip-browser-warning header')
+          }
+
           // Forward request headers (excluding problematic ones and custom cookie headers)
           // Note: We'll add Cookie header separately from custom header
           for (const [key, value] of Object.entries(req.headers)) {
@@ -208,20 +215,27 @@ function sseProxyPlugin(): Plugin {
             return
           }
 
-          // Set SSE headers for successful responses
-          res.setHeader('Content-Type', 'text/event-stream')
-          res.setHeader('Cache-Control', 'no-cache')
-          res.setHeader('Connection', 'keep-alive')
-
-          // Copy response headers (except encoding)
+          // Copy response headers first (except encoding and content-type)
           targetResponse.headers.forEach((value, key) => {
             const lowerKey = key.toLowerCase()
-            if (!['content-encoding', 'transfer-encoding'].includes(lowerKey)) {
+            // Skip headers that we'll set manually or that cause issues
+            if (!['content-encoding', 'transfer-encoding', 'content-type', 'content-length', 'connection', 'cache-control'].includes(lowerKey)) {
               res.setHeader(key, value)
             }
           })
 
+          // Set SSE headers AFTER copying (to ensure they're not overwritten)
+          res.setHeader('Content-Type', 'text/event-stream')
+          res.setHeader('Cache-Control', 'no-cache, no-transform')
+          res.setHeader('Connection', 'keep-alive')
+          res.setHeader('X-Accel-Buffering', 'no') // Disable nginx buffering if behind nginx
+
           res.statusCode = targetResponse.status
+          
+          // Flush headers immediately
+          res.flushHeaders()
+
+          console.log('[SSE Proxy] Headers sent, starting stream...')
 
           // Stream response for SSE
           if (targetResponse.body) {
@@ -232,25 +246,31 @@ function sseProxyPlugin(): Plugin {
                 while (true) {
                   const { done, value } = await reader.read()
                   if (done) {
-                    if (!res.closed) {
+                    console.log('[SSE Proxy] Stream ended (done=true)')
+                    if (!res.writableEnded) {
                       res.end()
                     }
                     break
                   }
                   // Write chunk to response (check if connection is still open)
-                  if (!res.closed) {
-                    res.write(value)
+                  if (!res.writableEnded && !res.destroyed) {
+                    const written = res.write(value)
+                    if (!written) {
+                      // Backpressure - wait for drain
+                      await new Promise(resolve => res.once('drain', resolve))
+                    }
                   } else {
+                    console.log('[SSE Proxy] Response closed, cancelling reader')
                     reader.cancel()
                     break
                   }
                 }
               } catch (err) {
                 console.error('[SSE Proxy] Stream error:', err)
-                if (!res.closed && !res.headersSent) {
+                if (!res.writableEnded && !res.headersSent) {
                   res.statusCode = 500
                   res.end()
-                } else if (!res.closed) {
+                } else if (!res.writableEnded) {
                   res.end()
                 }
                 try {
