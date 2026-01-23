@@ -32,13 +32,25 @@ import { useLocalStorage } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 // Helper to convert URL to use CORS proxy
-function toProxyUrl(url: string): string {
+function toProxyUrl(url: string, proxyBaseUrl?: string): string {
   try {
     const parsed = new URL(url)
     // Only proxy external URLs (not localhost)
     if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
       return url
     }
+    
+    // Use custom proxy base URL if provided, otherwise use default /sse-proxy/
+    // Custom proxy URL example: http://192.168.1.100:5174/sse-proxy/
+    if (proxyBaseUrl) {
+      // Ensure proxyBaseUrl ends with /sse-proxy or /sse-proxy/
+      const normalizedBase = proxyBaseUrl.endsWith('/') 
+        ? proxyBaseUrl.slice(0, -1) 
+        : proxyBaseUrl
+      return `${normalizedBase}/${parsed.host}${parsed.pathname}${parsed.search}`
+    }
+    
+    // Default: use relative path (works only in dev mode)
     // Convert: https://example.com/path → /sse-proxy/example.com/path
     return `/sse-proxy/${parsed.host}${parsed.pathname}${parsed.search}`
   } catch {
@@ -83,6 +95,8 @@ export function SSEMonitorPage() {
   const [savedUrls, setSavedUrls] = useLocalStorage<string[]>('sse-saved-urls', [])
   const [showAuthPanel, setShowAuthPanel] = useState(false)
   const [useProxy, setUseProxy] = useLocalStorage('sse-use-proxy', false)
+  const [proxyBaseUrl, setProxyBaseUrl] = useLocalStorage('sse-proxy-base-url', '')
+  const [showProxySettings, setShowProxySettings] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auth state
@@ -155,7 +169,7 @@ export function SSEMonitorPage() {
     }
     
     // Use proxy for external URLs if enabled
-    const finalUrl = useProxy && isExternal ? toProxyUrl(inputUrl) : inputUrl
+    const finalUrl = useProxy && isExternal ? toProxyUrl(inputUrl, proxyBaseUrl || undefined) : inputUrl
     setUrl(finalUrl)
     // Need to trigger connect after url state updates
     setTimeout(() => connect(), 50)
@@ -324,31 +338,72 @@ export function SSEMonitorPage() {
 
           {/* CORS Proxy Option - Show for external URLs */}
           {isExternal && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-              <Shield className="h-5 w-5 text-amber-400 shrink-0" />
-              <div className="flex-1">
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-3">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-amber-400 shrink-0" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="use-proxy"
+                      checked={useProxy}
+                      onCheckedChange={(checked) => setUseProxy(checked === true)}
+                      disabled={isConnected}
+                    />
+                    <Label 
+                      htmlFor="use-proxy" 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Use CORS Proxy
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    🔄 เปิดใช้ proxy เพื่อหลีก CORS สำหรับ external URLs
+                  </p>
+                </div>
                 <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="use-proxy"
-                    checked={useProxy}
-                    onCheckedChange={(checked) => setUseProxy(checked === true)}
+                  {useProxy && (
+                    <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">
+                      Proxy Active
+                    </span>
+                  )}
+                  {useProxy && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowProxySettings(!showProxySettings)}
+                      disabled={isConnected}
+                      className="text-xs h-7"
+                    >
+                      {showProxySettings ? 'Hide' : 'Settings'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Proxy Settings Panel */}
+              {useProxy && showProxySettings && (
+                <div className="pl-8 space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Proxy Base URL (เว้นว่างเพื่อใช้ dev server local)
+                  </Label>
+                  <Input
+                    value={proxyBaseUrl}
+                    onChange={(e) => setProxyBaseUrl(e.target.value)}
+                    placeholder="http://192.168.1.x:5174/sse-proxy"
+                    className="bg-black/30 border-white/20 font-mono text-sm"
                     disabled={isConnected}
                   />
-                  <Label 
-                    htmlFor="use-proxy" 
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Use CORS Proxy
-                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    💡 ตั้งค่า proxy URL สำหรับเชื่อมต่อกับ backend local เมื่อ deploy บน server แล้ว
+                    <br />
+                    ตัวอย่าง: <code className="bg-black/30 px-1 rounded">http://192.168.1.100:5174/sse-proxy</code>
+                  </p>
+                  {proxyBaseUrl && (
+                    <div className="text-xs text-cyan-400 p-2 rounded bg-cyan-500/10">
+                      📡 จะใช้ proxy: {proxyBaseUrl}
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  🔄 เปิดใช้ proxy เพื่อหลีก CORS สำหรับ external URLs (ใช้งานได้เฉพาะ dev server)
-                </p>
-              </div>
-              {useProxy && (
-                <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">
-                  Proxy Active
-                </span>
               )}
             </div>
           )}
@@ -738,11 +793,11 @@ export function SSEMonitorPage() {
       <footer className="border-t border-white/10 bg-black/20 py-2 px-4">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
-            {isConnected ? `Connected to: ${url.startsWith('/sse-proxy') ? inputUrl : url}` : 'Not connected'}
-            {isConnected && url.startsWith('/sse-proxy') && (
+            {isConnected ? `Connected to: ${url.includes('/sse-proxy') ? inputUrl : url}` : 'Not connected'}
+            {isConnected && url.includes('/sse-proxy') && (
               <span className="flex items-center gap-1 text-cyan-400">
                 <Shield className="h-3 w-3" />
-                via proxy
+                {proxyBaseUrl ? 'via custom proxy' : 'via proxy'}
               </span>
             )}
             {isConnected && authType !== 'none' && (
