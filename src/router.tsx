@@ -5,6 +5,7 @@ import { WorklogPage } from '@/pages/worklog'
 import { HistoryPage } from '@/pages/history'
 import { SSEMonitorPage } from '@/pages/sse-monitor'
 import { JsonFormatterPage } from '@/pages/json-formatter'
+import { ChangelogPage } from '@/pages/changelog'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -30,6 +31,11 @@ const historyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/history',
   component: HistoryPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      date: (search.date as string | undefined),
+    }
+  },
 })
 
 // SSE Monitor route
@@ -46,8 +52,15 @@ const jsonFormatterRoute = createRoute({
   component: JsonFormatterPage,
 })
 
+// Changelog route
+const changelogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/changelog',
+  component: ChangelogPage,
+})
+
 // Route tree
-const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute])
+const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute, changelogRoute])
 
 // Create router
 export const router = createRouter({

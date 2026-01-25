@@ -1,12 +1,15 @@
-import { useState, useCallback, useEffect, type FormEvent } from 'react'
-import { Rocket } from 'lucide-react'
-import { Header, ConnectionForm, TaskDetails, DateTimeForm, LogPanel } from '@/components'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { Rocket, Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Header, ConnectionForm, TaskDetails, DateTimeForm, LogPanel, MiniHistory } from '@/components'
 import { Button } from '@/components/ui/button'
 import { useLocalStorage, useWorklog, useTasks } from '@/hooks'
 import { generateDateRange } from '@/lib/date-utils'
 import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
 import { jiraAuthService } from '@/services/auth.service'
 import type { JiraIssue } from '@/types'
+
+type SaveMode = 'add-another' | 'close'
 
 export function WorklogPage() {
   // Session state
@@ -32,6 +35,36 @@ export function WorklogPage() {
 
   // Computed values
   const previewDates = generateDateRange(startDate, endDate, skipWeekends)
+
+  // Sync MiniHistory height with form height
+  const formRef = useRef<HTMLFormElement>(null)
+  const historyRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const syncHeights = () => {
+      if (formRef.current && historyRef.current) {
+        const formHeight = formRef.current.offsetHeight
+        historyRef.current.style.height = `${formHeight}px`
+      }
+    }
+
+    syncHeights()
+    window.addEventListener('resize', syncHeights)
+    
+    // Use ResizeObserver to watch for form height changes
+    let resizeObserver: ResizeObserver | null = null
+    if (formRef.current) {
+      resizeObserver = new ResizeObserver(syncHeights)
+      resizeObserver.observe(formRef.current)
+    }
+
+    return () => {
+      window.removeEventListener('resize', syncHeights)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
+    }
+  }, [isAuthenticated, previewDates, taskId, startDate, endDate, comment])
 
   // Check authentication on mount
   useEffect(() => {
@@ -77,8 +110,11 @@ export function WorklogPage() {
     // ไม่ปิด dialog อัตโนมัติ ให้ user ปิดเอง
   }, [setTaskId])
 
-  const handleSubmit = async (e: FormEvent) => {
+  const saveModeRef = useRef<SaveMode>('add-another')
+
+  const handleSubmit = async (e: React.FormEvent, mode: SaveMode = 'add-another') => {
     e.preventDefault()
+    saveModeRef.current = mode
 
     // Prevent double submission
     if (!isAuthenticated || isLoading) {
@@ -87,6 +123,17 @@ export function WorklogPage() {
 
     // Validate required fields
     if (!taskId.trim()) {
+      toast.error('กรุณาระบุ Task ID')
+      return
+    }
+
+    if (!startDate) {
+      toast.error('กรุณาเลือกวันที่')
+      return
+    }
+
+    if (!timeSpent) {
+      toast.error('กรุณาระบุระยะเวลา')
       return
     }
 
@@ -100,13 +147,33 @@ export function WorklogPage() {
       comment,
     })
 
-    // Clear form and close task picker after successful creation
+    // Show toast notification
     if (result.success > 0) {
-      setStartDate('')
-      setEndDate('')
-      setComment('')
-      setTaskId('')
-      tasks.reset()
+      const dateCount = previewDates.length
+      toast.success(
+        `สร้าง Worklog สำเร็จ ${result.success} รายการ`,
+        {
+          description: `Task: ${taskId} • ${dateCount} วัน • ${timeSpent}`,
+        }
+      )
+
+      if (mode === 'close') {
+        // Clear everything and reset
+        setStartDate('')
+        setEndDate('')
+        setComment('')
+        setTaskId('')
+        tasks.reset()
+      } else {
+        // Keep task, clear only date and comment for adding another
+        setStartDate('')
+        setEndDate('')
+        setComment('')
+      }
+    } else if (result.failed > 0) {
+      toast.error(`สร้าง Worklog ล้มเหลว ${result.failed} รายการ`, {
+        description: 'ตรวจสอบ Log Panel ด้านล่างเพื่อดูรายละเอียด',
+      })
     }
   }
 
@@ -128,7 +195,7 @@ export function WorklogPage() {
   if (isCheckingAuth) {
     return (
       <div className="p-4 md:p-8">
-        <div className="max-w-[800px] mx-auto relative z-10">
+        <div className="max-w-[1200px] mx-auto relative z-10">
           <Header />
           <div className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)] text-center">
             <p className="text-muted-foreground">กำลังตรวจสอบการเข้าสู่ระบบ...</p>
@@ -140,87 +207,124 @@ export function WorklogPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-[800px] mx-auto relative z-10">
+      <div className="max-w-[1200px] mx-auto relative z-10">
         <Header />
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
-        >
-          {!isAuthenticated ? (
-            <ConnectionForm onLoginSuccess={handleLoginSuccess} />
-          ) : (
-            <>
-              <div className="mb-8 pb-8 border-b border-border">
-                <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground mb-4">
-                  <span className="text-2xl">✅</span>
-                  เชื่อมต่อแล้ว
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  JIRA URL: {jiraUrl}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    await jiraAuthService.logout()
-                    setIsAuthenticated(false)
-                    setJiraUrl('')
-                  }}
-                  className="w-full"
-                >
-                  ออกจากระบบ
-                </Button>
-              </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 xl:items-start">
+          {/* Main Form */}
+          <div className="min-w-0 flex flex-col">
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
+              id="worklog-form"
+            >
+              {!isAuthenticated ? (
+                <ConnectionForm onLoginSuccess={handleLoginSuccess} />
+              ) : (
+                <>
+                  <div className="mb-8 pb-8 border-b border-border">
+                    <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground mb-4">
+                      <span className="text-2xl">✅</span>
+                      เชื่อมต่อแล้ว
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      JIRA URL: {jiraUrl}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        await jiraAuthService.logout()
+                        setIsAuthenticated(false)
+                        setJiraUrl('')
+                      }}
+                      className="w-full"
+                    >
+                      ออกจากระบบ
+                    </Button>
+                  </div>
 
-              <TaskDetails
-                taskId={taskId}
-                accountId={accountId}
-                jiraUrl={jiraUrl}
-                onTaskIdChange={setTaskId}
-                onAccountIdChange={setAccountId}
-                taskPicker={taskPickerProps}
-              />
+                  <TaskDetails
+                    taskId={taskId}
+                    accountId={accountId}
+                    jiraUrl={jiraUrl}
+                    onTaskIdChange={setTaskId}
+                    onAccountIdChange={setAccountId}
+                    taskPicker={taskPickerProps}
+                  />
 
-              <DateTimeForm
-                startDate={startDate}
-                endDate={endDate}
-                startTime={startTime}
-                timeSpent={timeSpent}
-                skipWeekends={skipWeekends}
-                comment={comment}
-                previewDates={previewDates}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onStartTimeChange={setStartTime}
-                onTimeSpentChange={setTimeSpent}
-                onSkipWeekendsChange={setSkipWeekends}
-                onCommentChange={setComment}
-              />
+                  <DateTimeForm
+                    startDate={startDate}
+                    endDate={endDate}
+                    startTime={startTime}
+                    timeSpent={timeSpent}
+                    skipWeekends={skipWeekends}
+                    comment={comment}
+                    previewDates={previewDates}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onStartTimeChange={setStartTime}
+                    onTimeSpentChange={setTimeSpent}
+                    onSkipWeekendsChange={setSkipWeekends}
+                    onCommentChange={setComment}
+                  />
 
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isLoading || !isAuthenticated}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-[#4C9AFF] hover:opacity-90 shadow-[0_4px_20px_rgba(0,82,204,0.4)] hover:shadow-[0_6px_30px_rgba(0,82,204,0.5)] transition-all hover:-translate-y-0.5"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    กำลังสร้าง...
-                  </>
-                ) : (
-                  <>
-                    <Rocket className="mr-2 h-5 w-5" />
-                    สร้าง Worklog
-                  </>
-                )}
-              </Button>
-            </>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      type="button"
+                      size="lg"
+                      disabled={isLoading || !isAuthenticated}
+                      onClick={(e) => handleSubmit(e, 'add-another')}
+                      className="flex-1 h-14 text-base font-semibold bg-gradient-to-r from-primary to-[#4C9AFF] hover:opacity-90 shadow-[0_4px_20px_rgba(0,82,204,0.4)] hover:shadow-[0_6px_30px_rgba(0,82,204,0.5)] transition-all hover:-translate-y-0.5"
+                    >
+                      {isLoading && saveModeRef.current === 'add-another' ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          กำลังสร้าง...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-5 w-5" />
+                          บันทึก & เพิ่มรายการใหม่
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant="outline"
+                      disabled={isLoading || !isAuthenticated}
+                      onClick={(e) => handleSubmit(e, 'close')}
+                      className="flex-1 h-14 text-base font-semibold border-primary/50 hover:bg-primary/10 transition-all"
+                    >
+                      {isLoading && saveModeRef.current === 'close' ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          กำลังสร้าง...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="mr-2 h-5 w-5" />
+                          บันทึก & เสร็จสิ้น
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </form>
+
+            {isAuthenticated && <LogPanel logs={logs} onClear={clearLogs} />}
+          </div>
+
+          {/* Mini History Sidebar */}
+          {isAuthenticated && (
+            <div ref={historyRef} className="flex flex-col xl:sticky xl:top-8">
+              <MiniHistory className="h-full" />
+            </div>
           )}
-        </form>
-
-        {isAuthenticated && <LogPanel logs={logs} onClear={clearLogs} />}
+        </div>
 
         <footer className="text-center mt-8 py-4">
           <p className="text-sm text-muted-foreground">

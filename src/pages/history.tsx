@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useSearch } from '@tanstack/react-router'
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -14,7 +14,7 @@ import {
   Trash2,
   Plus
 } from 'lucide-react'
-import { format, subDays } from 'date-fns'
+import { format, subDays, differenceInDays, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,6 +51,10 @@ function formatTimeRange(started: string, timeSpentSeconds: number): string {
 }
 
 export function HistoryPage() {
+  // Get date from query params
+  const search = useSearch({ from: '/history' })
+  const dateFromQuery = search.date as string | undefined
+
   // Session state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
@@ -62,8 +66,13 @@ export function HistoryPage() {
   // Date filter state
   const today = format(new Date(), 'yyyy-MM-dd')
   const weekAgo = format(subDays(new Date(), 6), 'yyyy-MM-dd')
-  const [startDate, setStartDate] = useState(weekAgo)
-  const [endDate, setEndDate] = useState(today)
+  
+  // If date query param exists, use it for both start and end date (single day view)
+  const initialStartDate = dateFromQuery || weekAgo
+  const initialEndDate = dateFromQuery || today
+  
+  const [startDate, setStartDate] = useState(initialStartDate)
+  const [endDate, setEndDate] = useState(initialEndDate)
 
   // Data state
   const [worklogs, setWorklogs] = useState<WorklogEntry[]>([])
@@ -125,7 +134,13 @@ export function HistoryPage() {
 
   // Validation
   const isDateRangeValid = startDate <= endDate
-  const dateError = !isDateRangeValid ? 'วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด' : null
+  const dateRangeDays = startDate && endDate ? differenceInDays(parseISO(endDate), parseISO(startDate)) : 0
+  const isWithinMonthLimit = dateRangeDays <= 60
+  const dateError = !isDateRangeValid 
+    ? 'วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด' 
+    : !isWithinMonthLimit 
+    ? 'ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)' 
+    : null
 
   // Check authentication on mount
   useEffect(() => {
@@ -147,7 +162,7 @@ export function HistoryPage() {
   }, [])
 
   // Fetch worklogs
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!isAuthenticated) {
       setError('กรุณาเข้าสู่ระบบก่อน')
       return
@@ -158,13 +173,21 @@ export function HistoryPage() {
       return
     }
 
+    if (!isWithinMonthLimit) {
+      setError('ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
       const data = await jiraService.fetchWorklogHistory(startDate, endDate)
       setWorklogs(data.worklogs || [])
-      setCurrentDayIndex(0)
+      // Only reset to 0 if no dateFromQuery, otherwise will be set by the effect below
+      if (!dateFromQuery) {
+        setCurrentDayIndex(0)
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(errorMessage)
@@ -172,14 +195,32 @@ export function HistoryPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAuthenticated, isDateRangeValid, startDate, endDate, dateFromQuery])
 
-  // Auto fetch on mount if authenticated
+  // Update dates when query param changes
+  useEffect(() => {
+    if (dateFromQuery) {
+      setStartDate(dateFromQuery)
+      setEndDate(dateFromQuery)
+    }
+  }, [dateFromQuery])
+
+  // Auto fetch on mount if authenticated, or when dates change
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
       fetchData()
     }
-  }, [isAuthenticated, isCheckingAuth])
+  }, [isAuthenticated, isCheckingAuth, fetchData])
+
+  // Find and set current day index when dateFromQuery is provided and data is loaded
+  useEffect(() => {
+    if (dateFromQuery && dailyWorklogs.length > 0) {
+      const index = dailyWorklogs.findIndex(day => day.date === dateFromQuery)
+      if (index !== -1) {
+        setCurrentDayIndex(index)
+      }
+    }
+  }, [dateFromQuery, dailyWorklogs])
 
   // Navigation handlers (now correct: index 0 = oldest day)
   const goToPreviousDay = () => {
@@ -353,11 +394,24 @@ export function HistoryPage() {
                 id="startDate"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  const newStartDate = e.target.value
+                  setStartDate(newStartDate)
+                  // If endDate is set and the range would exceed 60 days, adjust endDate
+                  if (endDate && newStartDate) {
+                    const daysDiff = differenceInDays(parseISO(endDate), parseISO(newStartDate))
+                    if (daysDiff > 60) {
+                      const maxEndDate = format(parseISO(newStartDate), 'yyyy-MM-dd')
+                      const adjustedEndDate = new Date(parseISO(newStartDate))
+                      adjustedEndDate.setDate(adjustedEndDate.getDate() + 60)
+                      setEndDate(format(adjustedEndDate, 'yyyy-MM-dd'))
+                    }
+                  }
+                }}
                 max={endDate}
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
-                  !isDateRangeValid && "border-destructive focus:border-destructive"
+                  (!isDateRangeValid || !isWithinMonthLimit) && "border-destructive focus:border-destructive"
                 )}
               />
             </div>
@@ -369,17 +423,34 @@ export function HistoryPage() {
                 id="endDate"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  const newEndDate = e.target.value
+                  // If startDate is set and the range would exceed 60 days, adjust startDate
+                  if (startDate && newEndDate) {
+                    const daysDiff = differenceInDays(parseISO(newEndDate), parseISO(startDate))
+                    if (daysDiff > 60) {
+                      const adjustedStartDate = new Date(parseISO(newEndDate))
+                      adjustedStartDate.setDate(adjustedStartDate.getDate() - 60)
+                      setStartDate(format(adjustedStartDate, 'yyyy-MM-dd'))
+                    }
+                  }
+                  setEndDate(newEndDate)
+                }}
                 min={startDate}
+                max={startDate ? (() => {
+                  const maxDate = new Date(parseISO(startDate))
+                  maxDate.setDate(maxDate.getDate() + 60)
+                  return format(maxDate, 'yyyy-MM-dd')
+                })() : undefined}
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
-                  !isDateRangeValid && "border-destructive focus:border-destructive"
+                  (!isDateRangeValid || !isWithinMonthLimit) && "border-destructive focus:border-destructive"
                 )}
               />
             </div>
             <Button
               onClick={fetchData}
-              disabled={isLoading || !isAuthenticated || !isDateRangeValid}
+              disabled={isLoading || !isAuthenticated || !isDateRangeValid || !isWithinMonthLimit}
               className="bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
             >
               <Search className="h-4 w-4 mr-2" />

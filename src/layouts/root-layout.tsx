@@ -1,4 +1,5 @@
 import { Outlet } from '@tanstack/react-router'
+import { Toaster } from 'sonner'
 
 export default function RootLayout() {
   return (
@@ -12,6 +13,20 @@ export default function RootLayout() {
 
       {/* Page content */}
       <Outlet />
+
+      {/* Toast notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'rgba(26, 26, 46, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#F4F5F7',
+            backdropFilter: 'blur(10px)',
+          },
+        }}
+        richColors
+      />
     </div>
   )
 }

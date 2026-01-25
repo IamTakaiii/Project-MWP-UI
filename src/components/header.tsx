@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { History, Home } from 'lucide-react'
+import { ScrollText, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function Header() {
@@ -13,10 +13,10 @@ export function Header() {
             หน้าหลัก
           </Button>
         </Link>
-        <Link to="/history">
+        <Link to="/changelog">
           <Button variant="secondary" size="sm" className="gap-2">
-            <History className="h-4 w-4" />
-            ดูประวัติ
+            <ScrollText className="h-4 w-4" />
+            Change Log
           </Button>
         </Link>
       </div>

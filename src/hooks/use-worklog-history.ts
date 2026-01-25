@@ -15,8 +15,26 @@ export function useWorklogHistory() {
 
   // Computed date range (current week by default)
   const dateRange = useMemo(() => {
-    const start = startOfWeek(selectedDate, { weekStartsOn: 1 }) // Monday
-    const end = endOfWeek(selectedDate, { weekStartsOn: 1 }) // Sunday
+    // Use selectedDate to calculate week range
+    const date = new Date(selectedDate)
+    const dayOfWeek = date.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Calculate Monday of the week containing selectedDate
+    // If selectedDate is Monday (1), use it as start date
+    // Otherwise, use startOfWeek which will give us Monday of that week
+    let start: Date
+    if (dayOfWeek === 1) {
+      // selectedDate is Monday, use it as start
+      start = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      start.setHours(0, 0, 0, 0)
+    } else {
+      // Use startOfWeek to get Monday of the week containing selectedDate
+      start = startOfWeek(date, { weekStartsOn: 1 })
+    }
+    
+    // Always use endOfWeek to get Sunday of the week containing selectedDate
+    const end = endOfWeek(date, { weekStartsOn: 1 })
+    
     return {
       startDate: format(start, 'yyyy-MM-dd'),
       endDate: format(end, 'yyyy-MM-dd'),

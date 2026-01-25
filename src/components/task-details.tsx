@@ -1,4 +1,5 @@
-import { ClipboardList } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ClipboardList, History } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -38,10 +39,18 @@ export function TaskDetails({
 }: TaskDetailsProps) {
   return (
     <section className="mb-8 pb-8 border-b border-border">
-      <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground mb-6">
-        <span className="text-2xl">📋</span>
-        รายละเอียด Task
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
+          <span className="text-2xl">📋</span>
+          รายละเอียด Task
+        </h2>
+        <Link to="/history">
+          <Button variant="secondary" size="sm" className="gap-2 bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 hover:text-amber-300">
+            <History className="h-4 w-4" />
+            ดูประวัติ
+          </Button>
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
