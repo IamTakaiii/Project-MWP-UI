@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { TaskPicker } from './task-picker'
+import { QuickTaskAccess } from './quick-task-access'
 import type { JiraIssue } from '@/types'
 
 interface TaskPickerState {
@@ -51,6 +52,12 @@ export function TaskDetails({
           </Button>
         </Link>
       </div>
+
+      {/* Quick Task Access */}
+      <QuickTaskAccess
+        onSelectTask={taskPicker.onSelectTask}
+        selectedTaskId={taskId}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">

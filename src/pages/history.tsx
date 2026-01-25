@@ -12,7 +12,9 @@ import {
   CalendarDays,
   Pencil,
   Trash2,
-  Plus
+  Plus,
+  Copy,
+  CopyPlus
 } from 'lucide-react'
 import { format, subDays, differenceInDays, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
@@ -30,7 +32,11 @@ import {
 import { jiraService, type WorklogEntry, type DailyWorklog } from '@/services'
 import { jiraAuthService } from '@/services/auth.service'
 import { WorklogDialog, DeleteConfirmDialog, type WorklogFormData } from '@/components/worklog-dialog'
+import { ContextMenu, useContextMenu, type ContextMenuAction } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { STORAGE_KEYS } from '@/lib/constants'
+import { useFavoriteTasks } from '@/hooks/use-favorite-tasks'
 
 const EIGHT_HOURS_SECONDS = 8 * 60 * 60
 
@@ -86,6 +92,14 @@ export function HistoryPage() {
   const [isWorklogDialogOpen, setIsWorklogDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedWorklog, setSelectedWorklog] = useState<WorklogEntry | null>(null)
+  const [isDuplicateMode, setIsDuplicateMode] = useState(false)
+
+  // Favorite tasks hook
+  const { recordTaskUsage } = useFavoriteTasks()
+
+  // Context menu
+  const contextMenu = useContextMenu()
+  const [contextMenuWorklog, setContextMenuWorklog] = useState<WorklogEntry | null>(null)
 
   // Group worklogs by date
   const dailyWorklogs = useMemo((): DailyWorklog[] => {
@@ -251,11 +265,76 @@ export function HistoryPage() {
     setIsDeleteDialogOpen(true)
   }
 
+  // Context menu handlers
+  const handleCopyWorklog = (worklog: WorklogEntry) => {
+    // Copy text to clipboard
+    const worklogText = `${worklog.issueKey} | ${worklog.timeSpent} | ${format(new Date(worklog.started), 'dd/MM/yyyy HH:mm')} | ${worklog.comment || '-'}`
+    navigator.clipboard.writeText(worklogText)
+    
+    // Store worklog data in localStorage for paste functionality
+    const worklogData = {
+      issueKey: worklog.issueKey,
+      timeSpent: worklog.timeSpent,
+      date: format(new Date(worklog.started), 'yyyy-MM-dd'),
+      startTime: format(new Date(worklog.started), 'HH:mm'),
+      comment: worklog.comment || '',
+    }
+    localStorage.setItem(STORAGE_KEYS.COPIED_WORKLOG, JSON.stringify(worklogData))
+    
+    toast.success('คัดลอกข้อมูล worklog แล้ว', {
+      description: `${worklog.issueKey} - ${worklog.timeSpent} • คลิกปุ่ม "วางข้อมูล" ในหน้า Worklog เพื่อใช้`,
+      duration: 5000,
+    })
+  }
+
+  const handleDuplicateWorklog = (worklog: WorklogEntry) => {
+    // Store worklog data in localStorage for paste functionality
+    const worklogData = {
+      issueKey: worklog.issueKey,
+      timeSpent: worklog.timeSpent,
+      date: format(new Date(worklog.started), 'yyyy-MM-dd'),
+      startTime: format(new Date(worklog.started), 'HH:mm'),
+      comment: worklog.comment || '',
+    }
+    localStorage.setItem(STORAGE_KEYS.COPIED_WORKLOG, JSON.stringify(worklogData))
+    
+    // Also open dialog for immediate use
+    setSelectedWorklog(worklog)
+    setIsDuplicateMode(true)
+    setIsWorklogDialogOpen(true)
+    
+    toast.success('เตรียมข้อมูลสำหรับสร้างซ้ำแล้ว', {
+      description: `${worklog.issueKey} - ${worklog.timeSpent} • สามารถใช้ปุ่ม "วางข้อมูล" ในหน้า Worklog ได้`,
+      duration: 5000,
+    })
+  }
+
+  const getContextMenuActions = (worklog: WorklogEntry): ContextMenuAction[] => {
+    return [
+      {
+        label: 'คัดลอก',
+        icon: <Copy className="h-4 w-4" />,
+        onClick: () => handleCopyWorklog(worklog),
+      },
+      {
+        label: 'สร้างซ้ำ',
+        icon: <CopyPlus className="h-4 w-4" />,
+        onClick: () => handleDuplicateWorklog(worklog),
+      },
+      {
+        label: 'ลบ',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => openDeleteDialog(worklog),
+        variant: 'destructive',
+      },
+    ]
+  }
+
   // Save worklog (create or update)
   const handleSaveWorklog = useCallback(async (formData: WorklogFormData) => {
     const started = `${formData.date}T${formData.startTime}:00.000+0700`
     
-    if (selectedWorklog) {
+    if (selectedWorklog && !isDuplicateMode) {
       // Update existing
       await jiraService.updateWorklog(
         selectedWorklog.issueKey,
@@ -267,7 +346,7 @@ export function HistoryPage() {
         }
       )
     } else {
-      // Create new
+      // Create new (or duplicate)
       await jiraService.createWorklog(
         formData.issueKey,
         {
@@ -276,11 +355,26 @@ export function HistoryPage() {
           comment: formData.comment,
         }
       )
+      
+      // Record task usage when worklog is created successfully
+      const taskForRecording = {
+        id: formData.issueKey,
+        key: formData.issueKey,
+        fields: {
+          summary: selectedWorklog?.issueSummary || '',
+          status: { name: 'Unknown', statusCategory: { key: 'new' } },
+          issuetype: { name: 'Task' },
+        },
+      }
+      recordTaskUsage(taskForRecording)
     }
+    
+    // Reset duplicate mode
+    setIsDuplicateMode(false)
     
     // Refresh data
     await fetchData()
-  }, [selectedWorklog])
+  }, [selectedWorklog, isDuplicateMode, fetchData, recordTaskUsage])
 
   // Delete worklog
   const handleDeleteWorklog = useCallback(async () => {
@@ -401,7 +495,6 @@ export function HistoryPage() {
                   if (endDate && newStartDate) {
                     const daysDiff = differenceInDays(parseISO(endDate), parseISO(newStartDate))
                     if (daysDiff > 60) {
-                      const maxEndDate = format(parseISO(newStartDate), 'yyyy-MM-dd')
                       const adjustedEndDate = new Date(parseISO(newStartDate))
                       adjustedEndDate.setDate(adjustedEndDate.getDate() + 60)
                       setEndDate(format(adjustedEndDate, 'yyyy-MM-dd'))
@@ -578,7 +671,9 @@ export function HistoryPage() {
                   day={day} 
                   jiraUrl={jiraUrl}
                   onEdit={openEditDialog}
-                  onDelete={openDeleteDialog}
+                  onDelete={(worklog) => openDeleteDialog(worklog)}
+                  onCopy={handleCopyWorklog}
+                  onDuplicate={handleDuplicateWorklog}
                 />
               ))}
             </div>
@@ -682,7 +777,14 @@ export function HistoryPage() {
                 </TableHeader>
                 <TableBody>
                   {currentDay.worklogs.map((worklog) => (
-                    <TableRow key={worklog.id} className="border-white/10 hover:bg-white/5">
+                    <TableRow 
+                      key={worklog.id} 
+                      className="border-white/10 hover:bg-white/5 relative"
+                      onContextMenu={(e) => {
+                        setContextMenuWorklog(worklog)
+                        contextMenu.openMenu(e)
+                      }}
+                    >
                       <TableCell className="font-mono font-semibold text-[#4C9AFF]">
                         <a 
                           href={`${jiraUrl}/browse/${worklog.issueKey}`}
@@ -741,15 +843,29 @@ export function HistoryPage() {
         </footer>
       </div>
 
+      {/* Context Menu */}
+      {contextMenuWorklog && (
+        <ContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          actions={getContextMenuActions(contextMenuWorklog)}
+          onClose={() => {
+            contextMenu.closeMenu()
+            setContextMenuWorklog(null)
+          }}
+        />
+      )}
+
       {/* Dialogs */}
       <WorklogDialog
         isOpen={isWorklogDialogOpen}
         onClose={() => {
           setIsWorklogDialogOpen(false)
           setSelectedWorklog(null)
+          setIsDuplicateMode(false)
         }}
         onSave={handleSaveWorklog}
-        worklog={selectedWorklog}
+        worklog={isDuplicateMode ? null : selectedWorklog}
         issueSummary={selectedWorklog?.issueSummary}
       />
 
@@ -772,10 +888,35 @@ interface DayCardProps {
   jiraUrl: string
   onEdit: (worklog: WorklogEntry) => void
   onDelete: (worklog: WorklogEntry) => void
+  onCopy: (worklog: WorklogEntry) => void
+  onDuplicate: (worklog: WorklogEntry) => void
 }
 
-function DayCard({ day, jiraUrl, onEdit, onDelete }: DayCardProps) {
+function DayCard({ day, jiraUrl, onEdit, onDelete, onCopy, onDuplicate }: DayCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const contextMenu = useContextMenu()
+  const [contextMenuWorklog, setContextMenuWorklog] = useState<WorklogEntry | null>(null)
+
+  const getContextMenuActions = (worklog: WorklogEntry): ContextMenuAction[] => {
+    return [
+      {
+        label: 'คัดลอก',
+        icon: <Copy className="h-4 w-4" />,
+        onClick: () => onCopy(worklog),
+      },
+      {
+        label: 'สร้างซ้ำ',
+        icon: <CopyPlus className="h-4 w-4" />,
+        onClick: () => onDuplicate(worklog),
+      },
+      {
+        label: 'ลบ',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => onDelete(worklog),
+        variant: 'destructive',
+      },
+    ]
+  }
 
   return (
     <div className={cn(
@@ -843,7 +984,14 @@ function DayCard({ day, jiraUrl, onEdit, onDelete }: DayCardProps) {
             </TableHeader>
             <TableBody>
               {day.worklogs.map((worklog) => (
-                <TableRow key={worklog.id} className="border-white/10 hover:bg-white/5">
+                <TableRow 
+                  key={worklog.id} 
+                  className="border-white/10 hover:bg-white/5 relative"
+                  onContextMenu={(e) => {
+                    setContextMenuWorklog(worklog)
+                    contextMenu.openMenu(e)
+                  }}
+                >
                   <TableCell className="font-mono font-semibold text-[#4C9AFF]">
                     <a 
                       href={`${jiraUrl}/browse/${worklog.issueKey}`}
@@ -894,6 +1042,19 @@ function DayCard({ day, jiraUrl, onEdit, onDelete }: DayCardProps) {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenuWorklog && (
+        <ContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          actions={getContextMenuActions(contextMenuWorklog)}
+          onClose={() => {
+            contextMenu.closeMenu()
+            setContextMenuWorklog(null)
+          }}
+        />
       )}
     </div>
   )

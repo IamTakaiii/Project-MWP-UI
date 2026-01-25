@@ -31,6 +31,8 @@ export const STORAGE_KEYS = {
   EMAIL: 'jira_email',
   API_TOKEN: 'jira_token',
   TASK_ID: 'jira_taskId',
+  COPIED_WORKLOG: 'jira_copiedWorklog',
+  FAVORITE_TASKS: 'jira_favoriteTasks',
 } as const
 
 // Default form values

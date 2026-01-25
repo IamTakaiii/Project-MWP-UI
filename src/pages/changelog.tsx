@@ -13,43 +13,21 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '1.3.0',
+    version: '1.1.0',
     date: '25 ม.ค. 2569',
     changes: [
       { type: 'feature', description: 'เพิ่ม Mini History แสดงประวัติสัปดาห์นี้ในหน้า Worklog' },
-      { type: 'fix', description: 'แก้ไขการคำนวณสัปดาห์ให้แสดงสัปดาห์ปัจจุบันเมื่อเป็นวันจันทร์' },
-      { type: 'improvement', description: 'จำกัดช่วงวันที่ในหน้า History ไม่เกิน 2 เดือน (60 วัน)' },
-    ],
-  },
-  {
-    version: '1.2.0',
-    date: '25 ม.ค. 2569',
-    changes: [
+      { type: 'feature', description: 'เพิ่ม Quick Actions Menu (คลิกขวา) สำหรับ Copy, Duplicate, Delete worklog' },
+      { type: 'feature', description: 'เพิ่มฟีเจอร์คัดลอกและวางข้อมูล worklog ระหว่างหน้า History และ Worklog' },
+      { type: 'feature', description: 'เพิ่ม Recent Tasks Quick Access แสดง 4 tasks ที่ใช้ล่าสุด' },
       { type: 'feature', description: 'เพิ่ม Toast Notification แจ้งเตือนเมื่อสร้าง Worklog สำเร็จ' },
       { type: 'feature', description: 'เพิ่มปุ่ม "บันทึก & เพิ่มรายการใหม่" vs "บันทึก & เสร็จสิ้น"' },
+      { type: 'fix', description: 'แก้ไขการคำนวณสัปดาห์ให้แสดงสัปดาห์ปัจจุบันเมื่อเป็นวันจันทร์' },
+      { type: 'fix', description: 'แก้ไข Calendar/Clock icon ให้เห็นชัดบน dark theme' },
+      { type: 'improvement', description: 'จำกัดช่วงวันที่ในหน้า History ไม่เกิน 2 เดือน (60 วัน)' },
       { type: 'improvement', description: 'ไม่ Clear Form ทั้งหมดหลังสร้าง Worklog เพื่อให้เพิ่มรายการใหม่ได้สะดวก' },
       { type: 'improvement', description: 'Date/Time picker เปิดได้เมื่อคลิกที่ input โดยตรง' },
-      { type: 'fix', description: 'แก้ไข Calendar/Clock icon ให้เห็นชัดบน dark theme' },
-    ],
-  },
-  {
-    version: '1.1.0',
-    date: '24 ม.ค. 2569',
-    changes: [
-      { type: 'feature', description: 'เพิ่มหน้า SSE Monitor สำหรับดู Server-Sent Events' },
-      { type: 'feature', description: 'เพิ่มหน้า JSON Formatter สำหรับจัดรูปแบบ JSON' },
-      { type: 'feature', description: 'รองรับ Authentication หลายรูปแบบใน SSE Monitor' },
-      { type: 'improvement', description: 'ปรับปรุง UI/UX ให้ใช้งานง่ายขึ้น' },
-    ],
-  },
-  {
-    version: '1.0.0',
-    date: '23 ม.ค. 2569',
-    changes: [
-      { type: 'feature', description: 'JIRA Worklog Creator - สร้าง worklog หลายวันพร้อมกัน' },
-      { type: 'feature', description: 'Task Picker - ค้นหาและเลือก Task จาก JIRA' },
-      { type: 'feature', description: 'ดูประวัติการสร้าง Worklog' },
-      { type: 'feature', description: 'รองรับการข้ามวันหยุดสุดสัปดาห์' },
+      { type: 'improvement', description: 'บันทึกการใช้งาน task เฉพาะเมื่อสร้าง worklog สำเร็จเท่านั้น' },
     ],
   },
 ]

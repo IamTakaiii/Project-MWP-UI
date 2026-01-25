@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Rocket, Plus } from 'lucide-react'
+import { Rocket, Plus, ClipboardPaste } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header, ConnectionForm, TaskDetails, DateTimeForm, LogPanel, MiniHistory } from '@/components'
 import { Button } from '@/components/ui/button'
-import { useLocalStorage, useWorklog, useTasks } from '@/hooks'
+import { useLocalStorage, useWorklog, useTasks, useFavoriteTasks } from '@/hooks'
 import { generateDateRange } from '@/lib/date-utils'
 import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
 import { jiraAuthService } from '@/services/auth.service'
@@ -32,6 +32,7 @@ export function WorklogPage() {
   // Custom hooks
   const { logs, isLoading, clearLogs, createWorklogs } = useWorklog()
   const tasks = useTasks()
+  const { recordTaskUsage } = useFavoriteTasks()
 
   // Computed values
   const previewDates = generateDateRange(startDate, endDate, skipWeekends)
@@ -84,6 +85,36 @@ export function WorklogPage() {
     }
     checkAuth()
   }, [])
+
+  // Load copied worklog data on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      const copiedWorklogStr = localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)
+      if (copiedWorklogStr) {
+        try {
+          const copiedWorklog = JSON.parse(copiedWorklogStr)
+          // Only auto-fill if form is empty
+          if (!taskId && !startDate && !timeSpent && !comment) {
+            setTaskId(copiedWorklog.issueKey || '')
+            setStartDate(copiedWorklog.date || '')
+            setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT)
+            setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME)
+            setComment(copiedWorklog.comment || '')
+            
+            // Clear copied data after using
+            localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+            
+            toast.success('วางข้อมูล worklog แล้ว', {
+              description: `Task: ${copiedWorklog.issueKey}`,
+            })
+          }
+        } catch (error) {
+          // Invalid JSON, ignore
+          localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+        }
+      }
+    }
+  }, [isAuthenticated, setTaskId])
 
   // Handlers
   const handleLoginSuccess = useCallback(() => {
@@ -150,6 +181,24 @@ export function WorklogPage() {
     // Show toast notification
     if (result.success > 0) {
       const dateCount = previewDates.length
+      
+      // Record task usage when worklog is created successfully
+      // Find task summary from tasks list if available
+      const taskSummary = tasks.tasks.find((t) => t.key === taskId)?.fields.summary || ''
+      if (taskId) {
+        // Create a minimal JiraIssue object for recording usage
+        const taskForRecording = {
+          id: taskId,
+          key: taskId,
+          fields: {
+            summary: taskSummary,
+            status: { name: 'Unknown', statusCategory: { key: 'new' } },
+            issuetype: { name: 'Task' },
+          },
+        }
+        recordTaskUsage(taskForRecording)
+      }
+      
       toast.success(
         `สร้าง Worklog สำเร็จ ${result.success} รายการ`,
         {
@@ -224,10 +273,51 @@ export function WorklogPage() {
               ) : (
                 <>
                   <div className="mb-8 pb-8 border-b border-border">
-                    <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground mb-4">
-                      <span className="text-2xl">✅</span>
-                      เชื่อมต่อแล้ว
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
+                        <span className="text-2xl">✅</span>
+                        เชื่อมต่อแล้ว
+                      </h2>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const copiedWorklogStr = localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)
+                          if (copiedWorklogStr) {
+                            try {
+                              const copiedWorklog = JSON.parse(copiedWorklogStr)
+                              setTaskId(copiedWorklog.issueKey || '')
+                              setStartDate(copiedWorklog.date || '')
+                              setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT)
+                              setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME)
+                              setComment(copiedWorklog.comment || '')
+                              
+                              // Clear copied data after using
+                              localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+                              
+                              toast.success('วางข้อมูล worklog แล้ว', {
+                                description: `Task: ${copiedWorklog.issueKey}`,
+                              })
+                            } catch (error) {
+                              toast.error('ไม่สามารถวางข้อมูลได้', {
+                                description: 'ข้อมูลที่คัดลอกไม่ถูกต้อง',
+                              })
+                              localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+                            }
+                          } else {
+                            toast.info('ไม่มีข้อมูลที่คัดลอก', {
+                              description: 'กรุณาคัดลอก worklog จากหน้า History ก่อน',
+                            })
+                          }
+                        }}
+                        className="gap-2"
+                        disabled={!localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)}
+                      >
+                        <ClipboardPaste className="h-4 w-4" />
+                        วางข้อมูล
+                      </Button>
+                    </div>
                     <p className="text-sm text-muted-foreground mb-4">
                       JIRA URL: {jiraUrl}
                     </p>
