@@ -103,6 +103,7 @@ export function TaskDetails({
       <QuickTaskAccess
         onSelectTask={taskPicker.onSelectTask}
         selectedTaskId={taskId}
+        availableTasks={taskPicker.tasks}
       />
 
       <div className="space-y-2">

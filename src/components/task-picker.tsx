@@ -57,7 +57,8 @@ export function TaskPicker({
   const { allTasks } = useFavoriteTasks()
 
   const handleSelectTask = (task: JiraIssue) => {
-    // Don't record usage here - it will be recorded when worklog is actually created
+    // Record task usage immediately to update summary
+    // This ensures summary is always up-to-date when selecting from task picker
     onSelectTask(task)
   }
 

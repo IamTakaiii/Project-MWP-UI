@@ -6,19 +6,29 @@ import type { JiraIssue } from '@/types'
 interface QuickTaskAccessProps {
   onSelectTask: (task: JiraIssue) => void
   selectedTaskId?: string
+  availableTasks?: JiraIssue[]
 }
 
-export function QuickTaskAccess({ onSelectTask, selectedTaskId }: QuickTaskAccessProps) {
-  const { recentTasks } = useFavoriteTasks()
+export function QuickTaskAccess({ onSelectTask, selectedTaskId, availableTasks = [] }: QuickTaskAccessProps) {
+  const { recentTasks, recordTaskUsage } = useFavoriteTasks()
 
   const createTaskFromUsage = (taskUsage: { taskKey: string; summary: string }): JiraIssue => {
+    // Try to find task summary from availableTasks if summary is missing
+    const availableTask = availableTasks.find(t => t.key === taskUsage.taskKey)
+    const summary = taskUsage.summary || availableTask?.fields.summary || ''
+    
+    // If we found summary from availableTasks, update the task usage
+    if (!taskUsage.summary && summary && availableTask) {
+      recordTaskUsage(availableTask)
+    }
+    
     return {
       id: taskUsage.taskKey,
       key: taskUsage.taskKey,
       fields: {
-        summary: taskUsage.summary,
-        status: { name: 'Unknown', statusCategory: { key: 'new' } },
-        issuetype: { name: 'Task' },
+        summary,
+        status: availableTask?.fields.status || { name: 'Unknown', statusCategory: { key: 'new' } },
+        issuetype: availableTask?.fields.issuetype || { name: 'Task' },
       },
     }
   }

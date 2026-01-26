@@ -167,8 +167,10 @@ export function WorklogPage() {
 
   const handleSelectTask = useCallback((task: JiraIssue) => {
     setTaskId(task.key)
+    // Record task usage immediately to update summary
+    recordTaskUsage(task)
     // ไม่ปิด dialog อัตโนมัติ ให้ user ปิดเอง
-  }, [setTaskId])
+  }, [setTaskId, recordTaskUsage])
 
   const saveModeRef = useRef<SaveMode>('add-another')
 
@@ -212,11 +214,12 @@ export function WorklogPage() {
       const dateCount = previewDates.length
       
       // Record task usage when worklog is created successfully
-      // Find task summary from tasks list if available
-      const taskSummary = tasks.tasks.find((t) => t.key === taskId)?.fields.summary || ''
+      // Find task summary from tasks list if available, or use the task that was selected
+      const selectedTask = tasks.tasks.find((t) => t.key === taskId)
+      const taskSummary = selectedTask?.fields.summary || ''
       if (taskId) {
-        // Create a minimal JiraIssue object for recording usage
-        const taskForRecording = {
+        // Use the full task object if available, otherwise create minimal object
+        const taskForRecording = selectedTask || {
           id: taskId,
           key: taskId,
           fields: {
