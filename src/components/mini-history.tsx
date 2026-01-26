@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { History, Clock, ExternalLink, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react'
+import { History, Clock, ExternalLink, CheckCircle2, AlertCircle, RefreshCw, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorklogHistory, formatTimeSpent } from '@/hooks/use-worklog-history'
 import { cn } from '@/lib/utils'
@@ -29,16 +29,39 @@ export function MiniHistory({ className }: MiniHistoryProps) {
     fetchHistory,
   } = useWorklogHistory()
 
+  // Track expanded state for each day
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+
   // Auto-fetch on mount
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
 
   // Handle day click - navigate to history page with date
-  const handleDayClick = (date: string) => {
+  const handleDayClick = (date: string, e: React.MouseEvent) => {
+    // If clicking on expand button, don't navigate
+    const target = e.target as HTMLElement
+    if (target.closest('.expand-button') || target.closest('.expand-text')) {
+      return
+    }
+    
     navigate({
       to: '/history',
       search: (prev) => ({ ...prev, date }),
+    })
+  }
+
+  // Toggle expand for a specific day
+  const toggleExpand = (date: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedDays(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(date)) {
+        newSet.delete(date)
+      } else {
+        newSet.add(date)
+      }
+      return newSet
     })
   }
 
@@ -124,56 +147,71 @@ export function MiniHistory({ className }: MiniHistoryProps) {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {dailyWorklogs.map((day) => (
-              <div 
-                key={day.date} 
-                className="p-4 hover:bg-white/5 transition-colors cursor-pointer"
-                onClick={() => handleDayClick(day.date)}
-              >
-                {/* Day header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    {day.isComplete ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    ) : (
-                      <Clock className="h-5 w-5 text-amber-400" />
-                    )}
-                    <span className="text-base font-medium">
-                      {format(new Date(day.date), 'EEE d MMM', { locale: th })}
-                    </span>
-                  </div>
-                  <span className={cn(
-                    "text-sm font-mono px-2.5 py-1 rounded",
-                    day.isComplete ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-muted-foreground"
-                  )}>
-                    {formatTimeSpent(day.totalSeconds)}
-                  </span>
-                </div>
-                
-                {/* Worklogs for the day */}
-                <div className="space-y-2 ml-7">
-                  {day.worklogs.slice(0, 3).map((log, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <span className="text-primary font-mono truncate max-w-[90px]">
-                        {log.issueKey}
-                      </span>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground truncate flex-1">
-                        {log.comment || 'ไม่มีหมายเหตุ'}
-                      </span>
-                      <span className="text-muted-foreground font-mono text-xs shrink-0">
-                        {formatTimeRange(log.started, log.timeSpentSeconds)}
+            {dailyWorklogs.map((day) => {
+              const isExpanded = expandedDays.has(day.date)
+              const showAll = isExpanded || day.worklogs.length <= 3
+              const displayedLogs = showAll ? day.worklogs : day.worklogs.slice(0, 3)
+              
+              return (
+                <div 
+                  key={day.date} 
+                  className="p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                  onClick={(e) => handleDayClick(day.date, e)}
+                >
+                  {/* Day header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {day.isComplete ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-amber-400" />
+                      )}
+                      <span className="text-base font-medium">
+                        {format(new Date(day.date), 'EEE d MMM', { locale: th })}
                       </span>
                     </div>
-                  ))}
-                  {day.worklogs.length > 3 && (
-                    <p className="text-sm text-muted-foreground">
-                      +{day.worklogs.length - 3} รายการ
-                    </p>
-                  )}
+                    <span className={cn(
+                      "text-sm font-mono px-2.5 py-1 rounded",
+                      day.isComplete ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-muted-foreground"
+                    )}>
+                      {formatTimeSpent(day.totalSeconds)}
+                    </span>
+                  </div>
+                  
+                  {/* Worklogs for the day */}
+                  <div className="space-y-2 ml-7">
+                    {displayedLogs.map((log, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <span className="text-primary font-mono truncate max-w-[90px]">
+                          {log.issueKey}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground truncate flex-1">
+                          {log.comment || 'ไม่มีหมายเหตุ'}
+                        </span>
+                        <span className="text-muted-foreground font-mono text-xs shrink-0">
+                          {formatTimeRange(log.started, log.timeSpentSeconds)}
+                        </span>
+                      </div>
+                    ))}
+                    {day.worklogs.length > 3 && (
+                      <button
+                        onClick={(e) => toggleExpand(day.date, e)}
+                        className="expand-button flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <ChevronDown className={cn(
+                          "h-3.5 w-3.5 transition-transform",
+                          isExpanded && "rotate-180"
+                        )} />
+                        <span className="expand-text">
+                          {isExpanded ? 'ซ่อน' : `+${day.worklogs.length - 3} รายการ`}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

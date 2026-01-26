@@ -42,7 +42,7 @@ export function QuickTaskAccess({ onSelectTask, selectedTaskId }: QuickTaskAcces
               key={taskUsage.taskKey}
               onClick={() => onSelectTask(createTaskFromUsage(taskUsage))}
               className={cn(
-                'shrink-0 px-4 py-2.5 rounded-xl text-left transition-all border',
+                'shrink-0 px-4 py-2.5 rounded-xl text-left transition-all border min-w-[180px]',
                 'hover:scale-105 active:scale-95',
                 isSelected
                   ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
@@ -55,8 +55,8 @@ export function QuickTaskAccess({ onSelectTask, selectedTaskId }: QuickTaskAcces
                   {taskUsage.taskKey}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1 truncate max-w-[150px]">
-                {taskUsage.summary}
+              <p className="text-xs text-muted-foreground mt-1 truncate min-h-[1.25rem]">
+                {taskUsage.summary || 'ไม่มีชื่อ'}
               </p>
               <p className="text-xs text-muted-foreground/70 mt-0.5">
                 ใช้ {taskUsage.useCount} ครั้ง
