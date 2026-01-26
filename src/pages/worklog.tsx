@@ -21,7 +21,6 @@ export function WorklogPage() {
   const [taskId, setTaskId] = useLocalStorage(STORAGE_KEYS.TASK_ID, '')
 
   // Form state
-  const [accountId, setAccountId] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [timeSpent, setTimeSpent] = useState<string>(DEFAULT_VALUES.TIME_SPENT)
@@ -126,6 +125,36 @@ export function WorklogPage() {
       }
     })
   }, [])
+
+  const handlePasteWorklog = useCallback(() => {
+    const copiedWorklogStr = localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)
+    if (copiedWorklogStr) {
+      try {
+        const copiedWorklog = JSON.parse(copiedWorklogStr)
+        setTaskId(copiedWorklog.issueKey || '')
+        setStartDate(copiedWorklog.date || '')
+        setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT)
+        setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME)
+        setComment(copiedWorklog.comment || '')
+        
+        // Clear copied data after using
+        localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+        
+        toast.success('วางข้อมูล worklog แล้ว', {
+          description: `Task: ${copiedWorklog.issueKey}`,
+        })
+      } catch (error) {
+        toast.error('ไม่สามารถวางข้อมูลได้', {
+          description: 'ข้อมูลที่คัดลอกไม่ถูกต้อง',
+        })
+        localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
+      }
+    } else {
+      toast.info('ไม่มีข้อมูลที่คัดลอก', {
+        description: 'กรุณาคัดลอก worklog จากหน้า History ก่อน',
+      })
+    }
+  }, [setTaskId])
 
   const handleFetchTasks = useCallback(() => {
     tasks.fetchTasks()
@@ -272,75 +301,16 @@ export function WorklogPage() {
                 <ConnectionForm onLoginSuccess={handleLoginSuccess} />
               ) : (
                 <>
-                  <div className="mb-8 pb-8 border-b border-border">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
-                        <span className="text-2xl">✅</span>
-                        เชื่อมต่อแล้ว
-                      </h2>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const copiedWorklogStr = localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)
-                          if (copiedWorklogStr) {
-                            try {
-                              const copiedWorklog = JSON.parse(copiedWorklogStr)
-                              setTaskId(copiedWorklog.issueKey || '')
-                              setStartDate(copiedWorklog.date || '')
-                              setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT)
-                              setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME)
-                              setComment(copiedWorklog.comment || '')
-                              
-                              // Clear copied data after using
-                              localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
-                              
-                              toast.success('วางข้อมูล worklog แล้ว', {
-                                description: `Task: ${copiedWorklog.issueKey}`,
-                              })
-                            } catch (error) {
-                              toast.error('ไม่สามารถวางข้อมูลได้', {
-                                description: 'ข้อมูลที่คัดลอกไม่ถูกต้อง',
-                              })
-                              localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG)
-                            }
-                          } else {
-                            toast.info('ไม่มีข้อมูลที่คัดลอก', {
-                              description: 'กรุณาคัดลอก worklog จากหน้า History ก่อน',
-                            })
-                          }
-                        }}
-                        className="gap-2"
-                        disabled={!localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)}
-                      >
-                        <ClipboardPaste className="h-4 w-4" />
-                        วางข้อมูล
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      JIRA URL: {jiraUrl}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        await jiraAuthService.logout()
-                        setIsAuthenticated(false)
-                        setJiraUrl('')
-                      }}
-                      className="w-full"
-                    >
-                      ออกจากระบบ
-                    </Button>
-                  </div>
-
                   <TaskDetails
                     taskId={taskId}
-                    accountId={accountId}
                     jiraUrl={jiraUrl}
                     onTaskIdChange={setTaskId}
-                    onAccountIdChange={setAccountId}
+                    onPasteWorklog={handlePasteWorklog}
+                    onLogout={async () => {
+                      await jiraAuthService.logout()
+                      setIsAuthenticated(false)
+                      setJiraUrl('')
+                    }}
                     taskPicker={taskPickerProps}
                   />
 
@@ -386,7 +356,7 @@ export function WorklogPage() {
                       variant="outline"
                       disabled={isLoading || !isAuthenticated}
                       onClick={(e) => handleSubmit(e, 'close')}
-                      className="flex-1 h-14 text-base font-semibold border-primary/50 hover:bg-primary/10 transition-all"
+                      className="flex-1 h-14 text-base font-semibold bg-success/10 text-success border-success/30 hover:bg-success/20 hover:text-success hover:border-success/40 transition-all"
                     >
                       {isLoading && saveModeRef.current === 'close' ? (
                         <>
@@ -415,12 +385,6 @@ export function WorklogPage() {
             </div>
           )}
         </div>
-
-        <footer className="text-center mt-8 py-4">
-          <p className="text-sm text-muted-foreground">
-            🔒 ข้อมูล credentials ถูกเก็บไว้ใน session ที่ปลอดภัย
-          </p>
-        </footer>
       </div>
     </div>
   )

@@ -59,10 +59,12 @@ export function useWorklogHistory() {
       .map(([date, logs]) => {
         const totalSeconds = logs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
         const dayName = format(parseISO(date), 'EEEE')
+        // Sort worklogs by started time (earliest first)
+        const sortedLogs = logs.sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime())
         return {
           date,
           dayName,
-          worklogs: logs,
+          worklogs: sortedLogs,
           totalSeconds,
           isComplete: totalSeconds >= EIGHT_HOURS_SECONDS,
         }

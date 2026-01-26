@@ -7,6 +7,13 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 
+// Format time range from started time and duration
+function formatTimeRange(started: string, timeSpentSeconds: number): string {
+  const startDate = new Date(started)
+  const endDate = new Date(startDate.getTime() + timeSpentSeconds * 1000)
+  return `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`
+}
+
 interface MiniHistoryProps {
   className?: string
 }
@@ -154,8 +161,8 @@ export function MiniHistory({ className }: MiniHistoryProps) {
                       <span className="text-muted-foreground truncate flex-1">
                         {log.comment || 'ไม่มีหมายเหตุ'}
                       </span>
-                      <span className="text-muted-foreground font-mono shrink-0">
-                        {formatTimeSpent(log.timeSpentSeconds)}
+                      <span className="text-muted-foreground font-mono text-xs shrink-0">
+                        {formatTimeRange(log.started, log.timeSpentSeconds)}
                       </span>
                     </div>
                   ))}

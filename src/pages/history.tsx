@@ -16,8 +16,9 @@ import {
   Copy,
   CopyPlus
 } from 'lucide-react'
-import { format, subDays, differenceInDays, parseISO } from 'date-fns'
+import { format, subDays, differenceInDays, parseISO, startOfWeek, endOfWeek } from 'date-fns'
 import { th } from 'date-fns/locale'
+import { generateDateRange } from '@/lib/date-utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -69,16 +70,41 @@ export function HistoryPage() {
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>('daily')
 
+  // Calculate current week range (Monday-Sunday) - same logic as mini history
+  const getCurrentWeekRange = useCallback(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Calculate Monday of the current week
+    let start: Date
+    if (dayOfWeek === 1) {
+      // Today is Monday, use it as start
+      start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      start.setHours(0, 0, 0, 0)
+    } else {
+      // Use startOfWeek to get Monday of the week containing today
+      start = startOfWeek(today, { weekStartsOn: 1 })
+    }
+    
+    // Always use endOfWeek to get Sunday of the week containing today
+    const end = endOfWeek(today, { weekStartsOn: 1 })
+    
+    return {
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(end, 'yyyy-MM-dd'),
+    }
+  }, [])
+
   // Date filter state
-  const today = format(new Date(), 'yyyy-MM-dd')
-  const weekAgo = format(subDays(new Date(), 6), 'yyyy-MM-dd')
-  
   // If date query param exists, use it for both start and end date (single day view)
-  const initialStartDate = dateFromQuery || weekAgo
-  const initialEndDate = dateFromQuery || today
+  // Otherwise, use current week range (Monday-Sunday)
+  const currentWeekRange = getCurrentWeekRange()
+  const initialStartDate = dateFromQuery || currentWeekRange.startDate
+  const initialEndDate = dateFromQuery || currentWeekRange.endDate
   
   const [startDate, setStartDate] = useState(initialStartDate)
   const [endDate, setEndDate] = useState(initialEndDate)
+  const [isUserSelectedDate, setIsUserSelectedDate] = useState(false)
 
   // Data state
   const [worklogs, setWorklogs] = useState<WorklogEntry[]>([])
@@ -101,8 +127,9 @@ export function HistoryPage() {
   const contextMenu = useContextMenu()
   const [contextMenuWorklog, setContextMenuWorklog] = useState<WorklogEntry | null>(null)
 
-  // Group worklogs by date
+  // Group worklogs by date and include all working days (excluding weekends) in the selected range
   const dailyWorklogs = useMemo((): DailyWorklog[] => {
+    // First, group worklogs by date
     const grouped: Record<string, WorklogEntry[]> = {}
 
     for (const worklog of worklogs) {
@@ -113,34 +140,56 @@ export function HistoryPage() {
       grouped[date].push(worklog)
     }
 
-    return Object.entries(grouped)
-      .map(([date, logs]) => {
-        const totalSeconds = logs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
-        return {
-          date,
-          dayName: format(new Date(date), 'EEEE', { locale: th }),
-          worklogs: logs.sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime()),
-          totalSeconds,
-          isComplete: totalSeconds >= EIGHT_HOURS_SECONDS,
-        }
-      })
-      .sort((a, b) => a.date.localeCompare(b.date)) // Sort ascending (oldest first)
-  }, [worklogs])
+    // Get all working days in the selected date range (excluding weekends)
+    const workingDays = startDate && endDate 
+      ? generateDateRange(startDate, endDate, true) // skipWeekends = true
+      : []
 
-  // Weekly summary - target is based on number of days with worklogs
+    // Create entries for all working days, including days without worklogs
+    const allDays: DailyWorklog[] = workingDays.map((date) => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const logs = grouped[dateStr] || []
+      const totalSeconds = logs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
+      
+      return {
+        date: dateStr,
+        dayName: format(date, 'EEEE', { locale: th }),
+        worklogs: logs.sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime()),
+        totalSeconds,
+        isComplete: totalSeconds >= EIGHT_HOURS_SECONDS,
+      }
+    })
+
+    return allDays.sort((a, b) => a.date.localeCompare(b.date)) // Sort ascending (oldest first)
+  }, [worklogs, startDate, endDate])
+
+  // Weekly summary - target is based on total working days (excluding weekends) in the selected date range
   const weeklySummary = useMemo(() => {
     const totalSeconds = worklogs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
-    const daysWorked = dailyWorklogs.length
-    const targetSeconds = daysWorked * EIGHT_HOURS_SECONDS
+    
+    // Calculate total working days (excluding weekends) in the selected date range
+    const workingDays = startDate && endDate 
+      ? generateDateRange(startDate, endDate, true) // skipWeekends = true
+      : []
+    
+    const totalWorkingDays = workingDays.length
+    const targetSeconds = totalWorkingDays * EIGHT_HOURS_SECONDS
+    
+    // Days with worklogs
+    const daysWithWorklogs = dailyWorklogs.length
+    // Days that are complete (8 hours or more)
+    const completeDays = dailyWorklogs.filter(d => d.isComplete).length
+    
     return {
       totalSeconds,
       targetSeconds,
       isComplete: totalSeconds >= targetSeconds,
-      daysWorked,
-      completeDays: dailyWorklogs.filter(d => d.isComplete).length,
-      targetHours: daysWorked * 8,
+      daysWorked: daysWithWorklogs,
+      totalWorkingDays,
+      completeDays,
+      targetHours: totalWorkingDays * 8,
     }
-  }, [worklogs, dailyWorklogs])
+  }, [worklogs, dailyWorklogs, startDate, endDate])
 
   // Current day data (for daily view)
   const currentDay = dailyWorklogs[currentDayIndex]
@@ -214,10 +263,17 @@ export function HistoryPage() {
   // Update dates when query param changes
   useEffect(() => {
     if (dateFromQuery) {
+      // Single day view from query param
       setStartDate(dateFromQuery)
       setEndDate(dateFromQuery)
+      setIsUserSelectedDate(false) // Reset flag when coming from query param
+    } else if (!isUserSelectedDate) {
+      // Only reset to current week range if user hasn't manually selected dates
+      const weekRange = getCurrentWeekRange()
+      setStartDate(weekRange.startDate)
+      setEndDate(weekRange.endDate)
     }
-  }, [dateFromQuery])
+  }, [dateFromQuery, getCurrentWeekRange, isUserSelectedDate])
 
   // Auto fetch on mount if authenticated, or when dates change
   useEffect(() => {
@@ -491,6 +547,7 @@ export function HistoryPage() {
                 onChange={(e) => {
                   const newStartDate = e.target.value
                   setStartDate(newStartDate)
+                  setIsUserSelectedDate(true) // Mark that user manually selected date
                   // If endDate is set and the range would exceed 60 days, adjust endDate
                   if (endDate && newStartDate) {
                     const daysDiff = differenceInDays(parseISO(endDate), parseISO(newStartDate))
@@ -518,6 +575,7 @@ export function HistoryPage() {
                 value={endDate}
                 onChange={(e) => {
                   const newEndDate = e.target.value
+                  setIsUserSelectedDate(true) // Mark that user manually selected date
                   // If startDate is set and the range would exceed 60 days, adjust startDate
                   if (startDate && newEndDate) {
                     const daysDiff = differenceInDays(parseISO(newEndDate), parseISO(startDate))
@@ -608,7 +666,7 @@ export function HistoryPage() {
                         ✅ ครบ {weeklySummary.targetHours} ชั่วโมงแล้ว!
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {weeklySummary.completeDays} / {weeklySummary.daysWorked} วันที่ครบ 8 ชม.
+                        {weeklySummary.completeDays} / {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
                       </p>
                     </div>
                   </div>
@@ -633,7 +691,7 @@ export function HistoryPage() {
                         🚨 ยังไม่ครบ {weeklySummary.targetHours} ชั่วโมง!
                       </p>
                       <p className="text-muted-foreground">
-                        {weeklySummary.completeDays} / {weeklySummary.daysWorked} วันที่ครบ 8 ชม.
+                        {weeklySummary.completeDays} / {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
                       </p>
                     </div>
                   </div>
@@ -834,13 +892,6 @@ export function HistoryPage() {
             </div>
           </div>
         )}
-
-        {/* Footer */}
-        <footer className="text-center mt-8 py-4">
-          <p className="text-sm text-muted-foreground">
-            🔒 ข้อมูล credentials ถูกเก็บไว้ใน session ที่ปลอดภัย
-          </p>
-        </footer>
       </div>
 
       {/* Context Menu */}

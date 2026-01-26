@@ -39,7 +39,6 @@ export interface LogEntry {
 // Form types
 export interface WorklogFormData {
   taskId: string
-  accountId: string
   startDate: string
   endDate: string
   startTime: string

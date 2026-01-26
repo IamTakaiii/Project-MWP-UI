@@ -180,13 +180,6 @@ export function HomePage() {
             <AppCardComponent key={app.id} app={app} />
           ))}
         </div>
-
-        {/* Footer */}
-        <footer className="text-center mt-16 py-6 border-t border-border/50">
-          <p className="text-sm text-muted-foreground">
-            Built by AI 🤖 maintain by me 😢
-          </p>
-        </footer>
       </div>
     </div>
   )

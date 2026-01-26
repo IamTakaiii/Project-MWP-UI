@@ -115,13 +115,6 @@ export function ChangelogPage() {
             </div>
           ))}
         </div>
-
-        {/* Footer */}
-        <footer className="text-center mt-12 py-4 border-t border-white/10">
-          <p className="text-sm text-muted-foreground">
-            Made with ❤️ for better productivity
-          </p>
-        </footer>
       </div>
     </div>
   )
