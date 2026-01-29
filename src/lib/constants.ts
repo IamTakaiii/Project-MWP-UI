@@ -54,7 +54,7 @@ export const ADMIN_TASKS = [
   { key: 'ADM-14', summary: 'TEST - Release Support / On Call' },
   { key: 'ADM-15', summary: 'TEST - Training' },
   { key: 'ADM-16', summary: 'Sprint Planning' },
-  { key: 'ADM-17', summary: 'Stand-up Meeting' },
+  { key: 'ADM-49', summary: 'Stand-up Meeting' },
   { key: 'ADM-18', summary: 'Sprint Review / Retrospective' },
   { key: 'ADM-19', summary: 'Backlog Refinement / Grooming' },
   { key: 'ADM-20', summary: 'Knowledge Sharing' },
