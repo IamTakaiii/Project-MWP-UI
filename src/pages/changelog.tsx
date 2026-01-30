@@ -16,10 +16,10 @@ const CHANGELOG: ChangelogEntry[] = [
     version: '1.2.0',
     date: '30 ม.ค. 2569',
     changes: [
-      { type: 'improvement', description: 'Refactor Backend API ให้เป็น KISS + SOLID แยก modules ชัดเจน' },
-      { type: 'improvement', description: 'ปรับปรุง Monthly Report ให้ใช้ shared logic ลด code duplication' },
-      { type: 'improvement', description: 'เพิ่ม Generic Cache Factory สำหรับ caching ที่มีประสิทธิภาพ' },
-      { type: 'improvement', description: 'ปรับปรุง HTTP Client แยกออกเป็น module เฉพาะ' },
+      { type: 'feature', description: 'เพิ่มการ report จำนวน ชั่วโมงในการทำงาน' },
+      { type: 'feature', description: 'เพิ่มการ export exel ชั่วโมงการทำงาน' },
+      { type: 'feature', description: 'เพิ่มปุ่ม generate markdown การทำงานรายวัน' },
+      { type: 'improvement', description: 'ปรับปรุง UI ให้ responsive สำหรับ mobile view' },
     ],
   },
   {
