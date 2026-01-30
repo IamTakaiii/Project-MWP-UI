@@ -13,6 +13,16 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.2.0',
+    date: '30 ม.ค. 2569',
+    changes: [
+      { type: 'improvement', description: 'Refactor Backend API ให้เป็น KISS + SOLID แยก modules ชัดเจน' },
+      { type: 'improvement', description: 'ปรับปรุง Monthly Report ให้ใช้ shared logic ลด code duplication' },
+      { type: 'improvement', description: 'เพิ่ม Generic Cache Factory สำหรับ caching ที่มีประสิทธิภาพ' },
+      { type: 'improvement', description: 'ปรับปรุง HTTP Client แยกออกเป็น module เฉพาะ' },
+    ],
+  },
+  {
     version: '1.1.0',
     date: '25 ม.ค. 2569',
     changes: [

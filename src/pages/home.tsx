@@ -53,9 +53,9 @@ const apps: AppCard[] = [
     title: 'Reports & Analytics',
     description: 'วิเคราะห์เวลาทำงาน สร้างรายงานรายสัปดาห์/เดือน',
     icon: <BarChart3 className="w-8 h-8" />,
-    href: '/reports',
+    href: '/epic-report',
     gradient: 'from-rose-500 to-red-400',
-    available: false,
+    available: true,
   },
   // {
   //   id: 'settings',
@@ -93,8 +93,8 @@ function AppCardComponent({ app }: { app: AppCard }) {
         group relative overflow-hidden rounded-2xl border border-border/50 
         bg-card/50 backdrop-blur-sm p-6 h-full
         transition-all duration-300 ease-out
-        ${app.available 
-          ? 'hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer' 
+        ${app.available
+          ? 'hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer'
           : 'opacity-50 cursor-not-allowed'
         }
       `}

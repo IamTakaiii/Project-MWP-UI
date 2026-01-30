@@ -22,6 +22,10 @@ export type {
   DailyWorklog,
 } from './jira'
 
+// Auth Service
+export { jiraAuthService, JiraAuthService } from './auth.service'
+export type { LoginResponse, SessionInfo } from './auth.service'
+
 // Add more services here:
 // export { calendarService } from './calendar'
 // export { notesService } from './notes'

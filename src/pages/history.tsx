@@ -14,9 +14,11 @@ import {
   Trash2,
   Plus,
   Copy,
-  CopyPlus
+  CopyPlus,
+  Download,
+  ClipboardList
 } from 'lucide-react'
-import { format, subDays, differenceInDays, parseISO, startOfWeek, endOfWeek } from 'date-fns'
+import { format, differenceInDays, parseISO, startOfWeek, endOfWeek } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { generateDateRange } from '@/lib/date-utils'
 import { Button } from '@/components/ui/button'
@@ -303,6 +305,38 @@ export function HistoryPage() {
     if (currentDayIndex < totalDays - 1) {
       setCurrentDayIndex(prev => prev + 1)
     }
+  }
+
+  // Generate daily summary markdown and copy to clipboard
+  const handleCopyDailySummary = () => {
+    if (!currentDay || currentDay.worklogs.length === 0) {
+      toast.error('ไม่มี worklog ในวันที่เลือก')
+      return
+    }
+
+    // Get unique task summaries from worklogs
+    const uniqueTasks = new Map<string, string>()
+    for (const worklog of currentDay.worklogs) {
+      if (!uniqueTasks.has(worklog.issueKey)) {
+        uniqueTasks.set(worklog.issueKey, worklog.issueSummary)
+      }
+    }
+
+    // Build markdown template
+    const taskLines = Array.from(uniqueTasks.entries())
+      .map(([key, summary]) => `- ${key} ${summary}`)
+      .join('\n')
+
+    const markdown = `เมื่อวาน
+${taskLines}
+
+วันนี้
+- `
+
+    navigator.clipboard.writeText(markdown)
+    toast.success('คัดลอกสรุปงานแล้ว', {
+      description: `${uniqueTasks.size} tasks • วางใน Slack หรือ Teams ได้เลย`,
+    })
   }
 
   // Dialog handlers
@@ -607,6 +641,30 @@ export function HistoryPage() {
               <Search className="h-4 w-4 mr-2" />
               {isLoading ? 'กำลังค้นหา...' : 'Fetch Data'}
             </Button>
+            <Button
+              onClick={async () => {
+                try {
+                  const blob = await jiraService.exportWorklogHistory(startDate, endDate)
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `worklog-${startDate}-${endDate}.xlsx`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                  toast.success('ดาวน์โหลดไฟล์ Excel สำเร็จ')
+                } catch {
+                  toast.error('ไม่สามารถ export ได้')
+                }
+              }}
+              disabled={isLoading || !isAuthenticated || !isDateRangeValid || !isWithinMonthLimit || worklogs.length === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Excel
+            </Button>
           </div>
           {/* Date validation error */}
           {dateError && (
@@ -783,12 +841,25 @@ export function HistoryPage() {
 
               {/* Summary & Navigation */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                <p className="text-sm">
-                  รวมเวลาวันนี้: <span className={cn(
-                    'font-semibold',
-                    currentDay.isComplete ? 'text-success' : 'text-orange-400'
-                  )}>{formatTimeSpent(currentDay.totalSeconds)}</span> / 8h
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm">
+                    รวมเวลาวันนี้: <span className={cn(
+                      'font-semibold',
+                      currentDay.isComplete ? 'text-success' : 'text-orange-400'
+                    )}>{formatTimeSpent(currentDay.totalSeconds)}</span> / 8h
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyDailySummary}
+                    disabled={currentDay.worklogs.length === 0}
+                    className="gap-1.5 border-white/20 hover:bg-white/10 hover:border-primary/50"
+                    title="คัดลอกสรุปงานวันนี้"
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    สรุปงาน
+                  </Button>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
                     ทั้งหมด {currentDay.worklogs.length} รายการ

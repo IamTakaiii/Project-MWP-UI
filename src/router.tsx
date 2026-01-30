@@ -6,6 +6,7 @@ import { HistoryPage } from '@/pages/history'
 import { SSEMonitorPage } from '@/pages/sse-monitor'
 import { JsonFormatterPage } from '@/pages/json-formatter'
 import { ChangelogPage } from '@/pages/changelog'
+import { EpicReportPage } from '@/pages/epic-report'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -59,8 +60,15 @@ const changelogRoute = createRoute({
   component: ChangelogPage,
 })
 
+// Epic Report route
+const epicReportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/epic-report',
+  component: EpicReportPage,
+})
+
 // Route tree
-const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute, changelogRoute])
+const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute, changelogRoute, epicReportRoute])
 
 // Create router
 export const router = createRouter({

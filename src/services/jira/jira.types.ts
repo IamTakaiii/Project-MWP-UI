@@ -82,6 +82,53 @@ export interface WorklogHistoryResponse {
   totalIssues: number
 }
 
+export interface UserWorklogSummary {
+  accountId: string
+  displayName: string
+  totalTimeSeconds: number
+  issues: string[]
+}
+
+export interface EpicWorklogReportResponse {
+  totalIssues: number
+  totalTimeSeconds: number
+  users: UserWorklogSummary[]
+}
+
+export interface ActiveEpicResponse {
+  key: string
+  summary: string
+  issuesCount: number
+}
+
+// Monthly Report Types
+export interface MonthlyIssueWorklog {
+  issueKey: string
+  issueSummary: string
+  timeSpentSeconds: number
+}
+
+export interface MonthlyUserEpicWorklog {
+  accountId: string
+  displayName: string
+  totalTimeSeconds: number
+  issues: MonthlyIssueWorklog[]
+}
+
+export interface MonthlyEpicReport {
+  epicKey: string
+  epicSummary: string
+  totalTimeSeconds: number
+  users: MonthlyUserEpicWorklog[]
+}
+
+export interface MonthlyReportResponse {
+  startDate: string
+  endDate: string
+  totalTimeSeconds: number
+  epics: MonthlyEpicReport[]
+}
+
 export interface DailyWorklog {
   date: string
   dayName: string
@@ -146,4 +193,15 @@ export interface SearchTasksPayload extends JiraCredentials {
 export interface WorklogHistoryPayload extends JiraCredentials {
   startDate: string
   endDate: string
+}
+
+export interface ProjectResponse {
+  key: string
+  name: string
+}
+
+export interface BoardResponse {
+  id: number
+  name: string
+  projectKey?: string
 }

@@ -10,6 +10,11 @@ import type {
   WorklogData,
   TaskFilters,
   WorklogHistoryResponse,
+  EpicWorklogReportResponse,
+  ActiveEpicResponse,
+  MonthlyReportResponse,
+  ProjectResponse,
+  BoardResponse,
 } from './jira.types'
 
 /**
@@ -128,6 +133,155 @@ class JiraService extends ApiClient {
       startDate,
       endDate,
     })
+  }
+
+  /**
+   * Fetch worklog report for an Epic
+   */
+  async fetchEpicWorklogReport(epicKey: string): Promise<EpicWorklogReportResponse> {
+    return this.post<EpicWorklogReportResponse>('/api/worklog/epic-report', {
+      epicKey,
+    })
+  }
+
+  /**
+   * Fetch active Epics within date range
+   */
+  async fetchActiveEpics(startDate: string, endDate: string): Promise<ActiveEpicResponse[]> {
+    return this.post<ActiveEpicResponse[]>('/api/worklog/active-epics', {
+      startDate,
+      endDate,
+    })
+  }
+
+  /**
+   * Export worklog history to Excel
+   */
+  async exportWorklogHistory(startDate: string, endDate: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ startDate, endDate }),
+    })
+    if (!response.ok) throw new Error('Failed to export worklog history')
+    return response.blob()
+  }
+
+  /**
+   * Export Epic report to Excel
+   */
+  async exportEpicReport(epicKey: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/epic-report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ epicKey }),
+    })
+    if (!response.ok) throw new Error('Failed to export epic report')
+    return response.blob()
+  }
+
+  /**
+   * Export active epics to Excel
+   */
+  async exportActiveEpics(startDate: string, endDate: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/active-epics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ startDate, endDate }),
+    })
+    if (!response.ok) throw new Error('Failed to export active epics')
+    return response.blob()
+  }
+
+  /**
+   * Fetch monthly report
+   */
+  async fetchMonthlyReport(startDate: string, endDate: string): Promise<MonthlyReportResponse> {
+    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report', {
+      startDate,
+      endDate,
+    })
+  }
+
+  /**
+   * Fetch monthly report by project
+   */
+  async fetchMonthlyReportByProject(projectKey: string, startDate: string, endDate: string): Promise<MonthlyReportResponse> {
+    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report-by-project', {
+      projectKey,
+      startDate,
+      endDate,
+    })
+  }
+
+  /**
+   * Fetch monthly report by board
+   */
+  async fetchMonthlyReportByBoard(boardId: number, startDate: string, endDate: string): Promise<MonthlyReportResponse> {
+    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report-by-board', {
+      boardId,
+      startDate,
+      endDate,
+    })
+  }
+
+  /**
+   * Export monthly report to Excel
+   */
+  async exportMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ startDate, endDate }),
+    })
+    if (!response.ok) throw new Error('Failed to export monthly report')
+    return response.blob()
+  }
+
+  /**
+   * Export monthly report by project to Excel
+   */
+  async exportMonthlyReportByProject(projectKey: string, startDate: string, endDate: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report-by-project`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ projectKey, startDate, endDate }),
+    })
+    if (!response.ok) throw new Error('Failed to export monthly report by project')
+    return response.blob()
+  }
+
+  /**
+   * Fetch user's projects
+   */
+  async fetchMyProjects(): Promise<ProjectResponse[]> {
+    return this.get<ProjectResponse[]>('/api/worklog/projects')
+  }
+
+  /**
+   * Fetch boards
+   */
+  async fetchBoards(): Promise<BoardResponse[]> {
+    return this.get<BoardResponse[]>('/api/worklog/boards')
+  }
+
+  /**
+   * Export monthly report by board to Excel
+   */
+  async exportMonthlyReportByBoard(boardId: number, startDate: string, endDate: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report-by-board`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ boardId, startDate, endDate }),
+    })
+    if (!response.ok) throw new Error('Failed to export monthly report by board')
+    return response.blob()
   }
 
   /**
