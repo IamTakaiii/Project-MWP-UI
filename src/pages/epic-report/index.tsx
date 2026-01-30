@@ -273,6 +273,19 @@ function MonthlyReportTab() {
     useEffect(() => { if (projectKey) localStorage.setItem('epic-report-project', projectKey) }, [projectKey])
     useEffect(() => { if (boardId) localStorage.setItem('epic-report-board', boardId) }, [boardId])
 
+    // Reset report when mode or filter changes
+    const handleModeChange = (newMode: 'my' | 'all') => {
+        setMode(newMode)
+        setMonthlyReport(null)
+        setError('')
+    }
+
+    const handleFilterTypeChange = (newFilterType: 'board' | 'project') => {
+        setFilterType(newFilterType)
+        setMonthlyReport(null)
+        setError('')
+    }
+
     useEffect(() => {
         const fetchData = async () => {
             setLoadingOptions(true)
@@ -405,7 +418,7 @@ function MonthlyReportTab() {
                     {/* Mode Selection */}
                     <div className="grid grid-cols-2 gap-3">
                         <button
-                            onClick={() => setMode('my')}
+                            onClick={() => handleModeChange('my')}
                             className={cn(
                                 "p-4 rounded-xl border-2 transition-all duration-300 text-left",
                                 mode === 'my' 
@@ -427,7 +440,7 @@ function MonthlyReportTab() {
                             </div>
                         </button>
                         <button
-                            onClick={() => setMode('all')}
+                            onClick={() => handleModeChange('all')}
                             className={cn(
                                 "p-4 rounded-xl border-2 transition-all duration-300 text-left",
                                 mode === 'all' 
@@ -458,7 +471,7 @@ function MonthlyReportTab() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setFilterType('board')}
+                                        onClick={() => handleFilterTypeChange('board')}
                                         className={cn(
                                             'rounded-md px-4 gap-2',
                                             filterType === 'board' && 'bg-violet-500 text-white hover:bg-violet-500 hover:text-white'
@@ -470,7 +483,7 @@ function MonthlyReportTab() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setFilterType('project')}
+                                        onClick={() => handleFilterTypeChange('project')}
                                         className={cn(
                                             'rounded-md px-4 gap-2',
                                             filterType === 'project' && 'bg-violet-500 text-white hover:bg-violet-500 hover:text-white'
