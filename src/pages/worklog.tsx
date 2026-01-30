@@ -287,107 +287,110 @@ export function WorklogPage() {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 min-h-screen">
       <div className="max-w-[1200px] mx-auto relative z-10">
         <Header />
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 xl:items-start">
-          {/* Main Form */}
-          <div className="min-w-0 flex flex-col">
-            <form
-              ref={formRef}
-              onSubmit={handleSubmit}
-              className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
-              id="worklog-form"
-            >
-              {!isAuthenticated ? (
+        {!isAuthenticated ? (
+          // Center login form vertically
+          <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+            <div className="w-full max-w-xl">
+              <div className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
                 <ConnectionForm onLoginSuccess={handleLoginSuccess} />
-              ) : (
-                <>
-                  <TaskDetails
-                    taskId={taskId}
-                    jiraUrl={jiraUrl}
-                    onTaskIdChange={setTaskId}
-                    onPasteWorklog={handlePasteWorklog}
-                    onLogout={async () => {
-                      await jiraAuthService.logout()
-                      setIsAuthenticated(false)
-                      setJiraUrl('')
-                    }}
-                    taskPicker={taskPickerProps}
-                  />
-
-                  <DateTimeForm
-                    startDate={startDate}
-                    endDate={endDate}
-                    startTime={startTime}
-                    timeSpent={timeSpent}
-                    skipWeekends={skipWeekends}
-                    comment={comment}
-                    previewDates={previewDates}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
-                    onStartTimeChange={setStartTime}
-                    onTimeSpentChange={setTimeSpent}
-                    onSkipWeekendsChange={setSkipWeekends}
-                    onCommentChange={setComment}
-                  />
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      type="button"
-                      size="lg"
-                      disabled={isLoading || !isAuthenticated}
-                      onClick={(e) => handleSubmit(e, 'add-another')}
-                      className="flex-1 h-14 text-base font-semibold bg-gradient-to-r from-primary to-[#4C9AFF] hover:opacity-90 shadow-[0_4px_20px_rgba(0,82,204,0.4)] hover:shadow-[0_6px_30px_rgba(0,82,204,0.5)] transition-all hover:-translate-y-0.5"
-                    >
-                      {isLoading && saveModeRef.current === 'add-another' ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          กำลังสร้าง...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-5 w-5" />
-                          บันทึก & เพิ่มรายการใหม่
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant="outline"
-                      disabled={isLoading || !isAuthenticated}
-                      onClick={(e) => handleSubmit(e, 'close')}
-                      className="flex-1 h-14 text-base font-semibold bg-success/10 text-success border-success/30 hover:bg-success/20 hover:text-success hover:border-success/40 transition-all"
-                    >
-                      {isLoading && saveModeRef.current === 'close' ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          กำลังสร้าง...
-                        </>
-                      ) : (
-                        <>
-                          <Rocket className="mr-2 h-5 w-5" />
-                          บันทึก & เสร็จสิ้น
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </form>
-
-            {isAuthenticated && <LogPanel logs={logs} onClear={clearLogs} />}
+              </div>
+            </div>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 xl:items-start">
+            {/* Main Form */}
+            <div className="min-w-0 flex flex-col">
+              <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
+                id="worklog-form"
+              >
+                <TaskDetails
+                  taskId={taskId}
+                  jiraUrl={jiraUrl}
+                  onTaskIdChange={setTaskId}
+                  onPasteWorklog={handlePasteWorklog}
+                  onLogout={async () => {
+                    await jiraAuthService.logout()
+                    setIsAuthenticated(false)
+                    setJiraUrl('')
+                  }}
+                  taskPicker={taskPickerProps}
+                />
 
-          {/* Mini History Sidebar */}
-          {isAuthenticated && (
+                <DateTimeForm
+                  startDate={startDate}
+                  endDate={endDate}
+                  startTime={startTime}
+                  timeSpent={timeSpent}
+                  skipWeekends={skipWeekends}
+                  comment={comment}
+                  previewDates={previewDates}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  onStartTimeChange={setStartTime}
+                  onTimeSpentChange={setTimeSpent}
+                  onSkipWeekendsChange={setSkipWeekends}
+                  onCommentChange={setComment}
+                />
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled={isLoading || !isAuthenticated}
+                    onClick={(e) => handleSubmit(e, 'add-another')}
+                    className="flex-1 h-14 text-base font-semibold bg-gradient-to-r from-primary to-[#4C9AFF] hover:opacity-90 shadow-[0_4px_20px_rgba(0,82,204,0.4)] hover:shadow-[0_6px_30px_rgba(0,82,204,0.5)] transition-all hover:-translate-y-0.5"
+                  >
+                    {isLoading && saveModeRef.current === 'add-another' ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        กำลังสร้าง...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-5 w-5" />
+                        บันทึก & เพิ่มรายการใหม่
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    disabled={isLoading || !isAuthenticated}
+                    onClick={(e) => handleSubmit(e, 'close')}
+                    className="flex-1 h-14 text-base font-semibold bg-success/10 text-success border-success/30 hover:bg-success/20 hover:text-success hover:border-success/40 transition-all"
+                  >
+                    {isLoading && saveModeRef.current === 'close' ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        กำลังสร้าง...
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="mr-2 h-5 w-5" />
+                        บันทึก & เสร็จสิ้น
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+
+              <LogPanel logs={logs} onClear={clearLogs} />
+            </div>
+
+            {/* Mini History Sidebar */}
             <div ref={historyRef} className="flex flex-col xl:sticky xl:top-8">
               <MiniHistory className="h-full" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
