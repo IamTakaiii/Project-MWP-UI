@@ -62,7 +62,7 @@ class JiraService extends ApiClient {
       }),
     }
 
-    return this.post('/api/worklog', {
+    return this.post('/api/v1/worklog', {
       taskId,
       payload,
     })
@@ -87,7 +87,7 @@ class JiraService extends ApiClient {
       }),
     }
 
-    return this.put('/api/worklog', {
+    return this.put('/api/v1/worklog', {
       issueKey,
       worklogId,
       payload,
@@ -102,7 +102,7 @@ class JiraService extends ApiClient {
     issueKey: string,
     worklogId: string
   ): Promise<void> {
-    await this.delete('/api/worklog', {
+    await this.delete('/api/v1/worklog', {
       issueKey,
       worklogId,
     })
@@ -113,9 +113,9 @@ class JiraService extends ApiClient {
    * Uses session-based authentication (no credentials needed)
    */
   async fetchMyTasks(
-    filters: TaskFilters = { searchText: '', status: 'In Progress' }
+    filters: TaskFilters = { searchText: '', status: 'Coding' }
   ): Promise<JiraSearchResponse> {
-    return this.post<JiraSearchResponse>('/api/my-tasks', {
+    return this.post<JiraSearchResponse>('/api/v1/my-tasks', {
       searchText: filters.searchText,
       status: filters.status,
     })
@@ -129,7 +129,7 @@ class JiraService extends ApiClient {
     startDate: string,
     endDate: string
   ): Promise<WorklogHistoryResponse> {
-    return this.post<WorklogHistoryResponse>('/api/worklog/history', {
+    return this.post<WorklogHistoryResponse>('/api/v1/worklog/history', {
       startDate,
       endDate,
     })
@@ -139,7 +139,7 @@ class JiraService extends ApiClient {
    * Fetch worklog report for an Epic
    */
   async fetchEpicWorklogReport(epicKey: string): Promise<EpicWorklogReportResponse> {
-    return this.post<EpicWorklogReportResponse>('/api/worklog/epic-report', {
+    return this.post<EpicWorklogReportResponse>('/api/v1/worklog/epic-report', {
       epicKey,
     })
   }
@@ -148,7 +148,7 @@ class JiraService extends ApiClient {
    * Fetch active Epics within date range
    */
   async fetchActiveEpics(startDate: string, endDate: string): Promise<ActiveEpicResponse[]> {
-    return this.post<ActiveEpicResponse[]>('/api/worklog/active-epics', {
+    return this.post<ActiveEpicResponse[]>('/api/v1/worklog/active-epics', {
       startDate,
       endDate,
     })
@@ -158,7 +158,7 @@ class JiraService extends ApiClient {
    * Export worklog history to Excel
    */
   async exportWorklogHistory(startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/history`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/history`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -172,7 +172,7 @@ class JiraService extends ApiClient {
    * Export Epic report to Excel
    */
   async exportEpicReport(epicKey: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/epic-report`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/epic-report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -186,7 +186,7 @@ class JiraService extends ApiClient {
    * Export active epics to Excel
    */
   async exportActiveEpics(startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/active-epics`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/active-epics`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -200,7 +200,7 @@ class JiraService extends ApiClient {
    * Fetch monthly report
    */
   async fetchMonthlyReport(startDate: string, endDate: string): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report', {
+    return this.post<MonthlyReportResponse>('/api/v1/worklog/monthly-report', {
       startDate,
       endDate,
     })
@@ -210,7 +210,7 @@ class JiraService extends ApiClient {
    * Fetch monthly report by project
    */
   async fetchMonthlyReportByProject(projectKey: string, startDate: string, endDate: string): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report-by-project', {
+    return this.post<MonthlyReportResponse>('/api/v1/worklog/monthly-report-by-project', {
       projectKey,
       startDate,
       endDate,
@@ -221,7 +221,7 @@ class JiraService extends ApiClient {
    * Fetch monthly report by board
    */
   async fetchMonthlyReportByBoard(boardId: number, startDate: string, endDate: string): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>('/api/worklog/monthly-report-by-board', {
+    return this.post<MonthlyReportResponse>('/api/v1/worklog/monthly-report-by-board', {
       boardId,
       startDate,
       endDate,
@@ -232,7 +232,7 @@ class JiraService extends ApiClient {
    * Export monthly report to Excel
    */
   async exportMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/monthly-report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -246,7 +246,7 @@ class JiraService extends ApiClient {
    * Export monthly report by project to Excel
    */
   async exportMonthlyReportByProject(projectKey: string, startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report-by-project`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/monthly-report-by-project`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -260,21 +260,21 @@ class JiraService extends ApiClient {
    * Fetch user's projects
    */
   async fetchMyProjects(): Promise<ProjectResponse[]> {
-    return this.get<ProjectResponse[]>('/api/worklog/projects')
+    return this.get<ProjectResponse[]>('/api/v1/worklog/projects')
   }
 
   /**
    * Fetch boards
    */
   async fetchBoards(): Promise<BoardResponse[]> {
-    return this.get<BoardResponse[]>('/api/worklog/boards')
+    return this.get<BoardResponse[]>('/api/v1/worklog/boards')
   }
 
   /**
    * Export monthly report by board to Excel
    */
   async exportMonthlyReportByBoard(boardId: number, startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/worklog/export/monthly-report-by-board`, {
+    const response = await fetch(`${this.baseUrl}/api/v1/worklog/export/monthly-report-by-board`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

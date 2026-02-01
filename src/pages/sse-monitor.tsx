@@ -68,13 +68,13 @@ function isExternalUrl(url: string): boolean {
   }
 }
 
-const DEFAULT_SSE_URL = 'http://localhost:3000/api/events'
+const DEFAULT_SSE_URL = 'http://localhost:3000/api/v1/events'
 
 // Preset endpoints
 const PRESET_URLS = [
-  { label: 'Events', url: 'http://localhost:3000/api/events' },
-  { label: 'Logs', url: 'http://localhost:3000/api/logs/stream' },
-  { label: 'Notifications', url: 'http://localhost:3000/api/notifications' },
+  { label: 'Events', url: 'http://localhost:3000/api/v1/events' },
+  { label: 'Logs', url: 'http://localhost:3000/api/v1/logs/stream' },
+  { label: 'Notifications', url: 'http://localhost:3000/api/v1/notifications' },
 ]
 
 type AuthType = 'none' | 'bearer' | 'basic' | 'apikey'
@@ -283,7 +283,7 @@ export function SSEMonitorPage() {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="http://localhost:3000/api/events"
+              placeholder="http://localhost:3000/api/v1/events"
               className="flex-1 bg-black/30 border-white/20 font-mono text-sm"
               disabled={isConnected}
             />

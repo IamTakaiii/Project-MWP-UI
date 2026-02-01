@@ -31,7 +31,7 @@ function getEnvVar(key: string, fallback: string): string {
  */
 export const services: ServicesConfig = {
   jira: {
-    baseUrl: getEnvVar('VITE_JIRA_API_URL', 'http://localhost:3001'),
+    baseUrl: getEnvVar('VITE_JIRA_API_URL', 'http://localhost:3000'),
     timeout: 30000,
   },
   // Example: Add more services

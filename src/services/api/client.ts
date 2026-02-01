@@ -8,6 +8,15 @@
 import type { ServiceConfig } from './config'
 
 /**
+ * Standard API response wrapper
+ */
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  message: string
+  data: T
+}
+
+/**
  * Standard API error class
  */
 export class ApiError extends Error {
@@ -145,6 +154,13 @@ export class ApiClient {
         throw new ApiError(message, response.status, 'API_ERROR', result)
       }
 
+      // Unwrap API response if it has the standard format
+      const apiResponse = result as ApiResponse<T>
+      if (apiResponse && typeof apiResponse === 'object' && 'data' in apiResponse) {
+        return apiResponse.data as T
+      }
+
+      // Return raw result if not wrapped
       return result as T
     } catch (error) {
       clearTimeout(timeoutId)

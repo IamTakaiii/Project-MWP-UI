@@ -3,6 +3,7 @@ export const STATUS_OPTIONS = [
   { value: 'all', label: 'ทุก Status' },
   { value: 'Open', label: 'Open' },
   { value: 'To Do', label: 'To Do' },
+  { value: 'Coding', label: 'Coding' },
   { value: 'In Progress', label: 'In Progress' },
   { value: 'In Review', label: 'In Review' },
   { value: 'Resolved', label: 'Resolved' },
@@ -39,7 +40,7 @@ export const STORAGE_KEYS = {
 export const DEFAULT_VALUES = {
   TIME_SPENT: '15m',
   START_TIME: '09:30',
-  STATUS_FILTER: 'In Progress',
+  STATUS_FILTER: 'Coding',
   SKIP_WEEKENDS: true,
 } as const
 
