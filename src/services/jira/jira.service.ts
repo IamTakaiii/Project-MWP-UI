@@ -113,7 +113,7 @@ class JiraService extends ApiClient {
    * Uses session-based authentication (no credentials needed)
    */
   async fetchMyTasks(
-    filters: TaskFilters = { searchText: '', status: 'Coding' }
+    filters: TaskFilters = { searchText: '', status: 'In Progress' }
   ): Promise<JiraSearchResponse> {
     return this.post<JiraSearchResponse>('/api/v1/my-tasks', {
       searchText: filters.searchText,
