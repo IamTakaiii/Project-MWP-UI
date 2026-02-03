@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -63,6 +63,7 @@ export function HistoryPage() {
   // Get date from query params
   const search = useSearch({ from: '/history' })
   const dateFromQuery = search.date as string | undefined
+  const navigate = useNavigate({ from: '/history' })
 
   // Session state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -582,6 +583,10 @@ ${taskLines}
                   const newStartDate = e.target.value
                   setStartDate(newStartDate)
                   setIsUserSelectedDate(true) // Mark that user manually selected date
+                  // Clear the date query param when user manually changes the date
+                  navigate({
+                    search: (prev) => ({ ...prev, date: undefined }),
+                  })
                   // If endDate is set and the range would exceed 60 days, adjust endDate
                   if (endDate && newStartDate) {
                     const daysDiff = differenceInDays(parseISO(endDate), parseISO(newStartDate))
@@ -610,6 +615,10 @@ ${taskLines}
                 onChange={(e) => {
                   const newEndDate = e.target.value
                   setIsUserSelectedDate(true) // Mark that user manually selected date
+                  // Clear the date query param when user manually changes the date
+                  navigate({
+                    search: (prev) => ({ ...prev, date: undefined }),
+                  })
                   // If startDate is set and the range would exceed 60 days, adjust startDate
                   if (startDate && newEndDate) {
                     const daysDiff = differenceInDays(parseISO(newEndDate), parseISO(startDate))
