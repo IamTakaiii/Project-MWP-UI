@@ -13,6 +13,41 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.0",
+    date: "4 ก.พ. 2569",
+    changes: [
+      {
+        type: "feature",
+        description:
+          "เพิ่มเมนู \"ลบทั้งหมดในช่วงนี้\" (Bulk Delete) ในคลิกขวาหน้า History",
+      },
+      {
+        type: "feature",
+        description:
+          "เพิ่มส่วนแสดงผล \"สรุปงานแยกตาม Task\" (Issue Summary Stats) ในหน้า History",
+      },
+      {
+        type: "feature",
+        description:
+          "เพิ่มช่องค้นหา (Search Filter) ในหน้า History กรองตาม Issue Key หรือรายละเอียด",
+      },
+      {
+        type: "improvement",
+        description:
+          "ปรับปรุงดีไซน์ \"Recent Tasks\" ใหม่ เป็นแบบ Chips สวยงามและประหยัดพื้นที่",
+      },
+      {
+        type: "improvement",
+        description:
+          "เพิ่มปุ่มย่อ/ขยายส่วนสรุปงานในหน้า History (เริ่มต้นแบบซ่อน)",
+      },
+      {
+        type: "improvement",
+        description: "นำฟีเจอร์ Calendar View ออกจากระบบเพื่อความสะอาดของ UI",
+      },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "30 ม.ค. 2569",
     changes: [

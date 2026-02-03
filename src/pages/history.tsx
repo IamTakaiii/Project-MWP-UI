@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useSearch, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
@@ -42,6 +44,7 @@ import { jiraAuthService } from "@/services/auth.service";
 import {
   WorklogDialog,
   DeleteConfirmDialog,
+  BulkDeleteConfirmDialog,
   type WorklogFormData,
 } from "@/components/worklog-dialog";
 import { DayCard } from "@/components/history/day-card";
@@ -110,6 +113,7 @@ export function HistoryPage() {
 
   // Data state
   const [worklogs, setWorklogs] = useState<WorklogEntry[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,6 +127,8 @@ export function HistoryPage() {
     null,
   );
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [showIssueStats, setShowIssueStats] = useState(false);
 
   // Favorite tasks hook
   const { recordTaskUsage } = useFavoriteTasks();
@@ -132,9 +138,21 @@ export function HistoryPage() {
   const [contextMenuWorklog, setContextMenuWorklog] =
     useState<WorklogEntry | null>(null);
 
-  // Use the custom hook for statistics
+  // Filter worklogs based on search query
+  const filteredWorklogs = useMemo(() => {
+    if (!searchQuery.trim()) return worklogs;
+    const query = searchQuery.toLowerCase();
+    return worklogs.filter(
+      (log) =>
+        log.issueKey.toLowerCase().includes(query) ||
+        log.issueSummary.toLowerCase().includes(query) ||
+        (log.comment && log.comment.toLowerCase().includes(query)),
+    );
+  }, [worklogs, searchQuery]);
+
+  // Use the custom hook for statistics (using filtered logs)
   const { dailyWorklogs, weeklySummary } = useWorklogStats({
-    worklogs,
+    worklogs: filteredWorklogs,
     startDate,
     endDate,
   });
@@ -301,6 +319,11 @@ ${taskLines}
     setIsDeleteDialogOpen(true);
   };
 
+  const openBulkDeleteDialog = (worklog: WorklogEntry) => {
+    setSelectedWorklog(worklog);
+    setIsBulkDeleteDialogOpen(true);
+  };
+
   // Context menu handlers
   const handleCopyWorklog = (worklog: WorklogEntry) => {
     // Copy text to clipboard
@@ -371,6 +394,12 @@ ${taskLines}
         onClick: () => openDeleteDialog(worklog),
         variant: "destructive",
       },
+      {
+        label: "ลบทั้งหมดในช่วงนี้",
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => openBulkDeleteDialog(worklog),
+        variant: "destructive",
+      },
     ];
   };
 
@@ -433,6 +462,53 @@ ${taskLines}
     await fetchData();
   }, [selectedWorklog, fetchData]);
 
+  // Bulk Delete worklog
+  const handleBulkDeleteWorklog = useCallback(async () => {
+    if (!selectedWorklog) return;
+
+    // Find all worklogs with same issueKey in the current filtered list
+    const worklogsToDelete = filteredWorklogs.filter(
+      (w) => w.issueKey === selectedWorklog.issueKey,
+    );
+    const count = worklogsToDelete.length;
+
+    // Execute deletes
+    // We use a loop to control concurrency, though Promise.all could work too
+    for (const worklog of worklogsToDelete) {
+      await jiraService.deleteWorklog(worklog.issueKey, worklog.id);
+    }
+
+    toast.success(`ลบ worklog ${count} รายการเรียบร้อยแล้ว`);
+
+    // Refresh data
+    await fetchData();
+  }, [selectedWorklog, filteredWorklogs, fetchData]);
+
+  // Calculate stats by issue
+  const issueStats = useMemo(() => {
+    const stats = new Map<
+      string,
+      { summary: string; totalSeconds: number; count: number }
+    >();
+
+    filteredWorklogs.forEach((log) => {
+      const current = stats.get(log.issueKey) || {
+        summary: log.issueSummary,
+        totalSeconds: 0,
+        count: 0,
+      };
+      stats.set(log.issueKey, {
+        summary: log.issueSummary,
+        totalSeconds: current.totalSeconds + log.timeSpentSeconds,
+        count: current.count + 1,
+      });
+    });
+
+    return Array.from(stats.entries())
+      .map(([key, data]) => ({ key, ...data }))
+      .sort((a, b) => b.totalSeconds - a.totalSeconds);
+  }, [filteredWorklogs]);
+
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-[1000px] mx-auto items-center justify-between mb-4">
@@ -477,7 +553,7 @@ ${taskLines}
                 className={cn(
                   "gap-2 rounded-md",
                   viewMode === "daily" &&
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}
               >
                 <Calendar className="h-4 w-4" />
@@ -490,7 +566,7 @@ ${taskLines}
                 className={cn(
                   "gap-2 rounded-md",
                   viewMode === "weekly" &&
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}
               >
                 <CalendarDays className="h-4 w-4" />
@@ -534,7 +610,7 @@ ${taskLines}
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
                   (!isDateRangeValid || !isWithinMonthLimit) &&
-                    "border-destructive focus:border-destructive",
+                  "border-destructive focus:border-destructive",
                 )}
               />
             </div>
@@ -575,18 +651,45 @@ ${taskLines}
                 max={
                   startDate
                     ? (() => {
-                        const maxDate = new Date(parseISO(startDate));
-                        maxDate.setDate(maxDate.getDate() + 60);
-                        return format(maxDate, "yyyy-MM-dd");
-                      })()
+                      const maxDate = new Date(parseISO(startDate));
+                      maxDate.setDate(maxDate.getDate() + 60);
+                      return format(maxDate, "yyyy-MM-dd");
+                    })()
                     : undefined
                 }
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
                   (!isDateRangeValid || !isWithinMonthLimit) &&
-                    "border-destructive focus:border-destructive",
+                  "border-destructive focus:border-destructive",
                 )}
               />
+            </div>
+            {/* Search Input */}
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-sm text-muted-foreground">
+                ค้นหา (Issue, Summary, Comment)
+              </Label>
+              <div className="relative w-[250px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="พิมพ์คำค้นหา..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-black/30 border-white/20 focus:border-primary"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 hover:bg-white/10"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <span className="sr-only">Clear</span>
+                    <span className="text-xs">✕</span>
+                  </Button>
+                )}
+              </div>
             </div>
             <Button
               onClick={fetchData}
@@ -643,6 +746,59 @@ ${taskLines}
             </p>
           )}
         </div>
+
+        {/* Issue Summary Stats (New Feature) */}
+        {!isLoading && issueStats.length > 0 && (
+          <div className="bg-card/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
+            <div
+              className="flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setShowIssueStats(!showIssueStats)}
+            >
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                สรุปงานแยกตาม Task ({issueStats.length} งาน)
+              </h2>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                {showIssueStats ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {showIssueStats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                {issueStats.map((stat) => (
+                  <div
+                    key={stat.key}
+                    className="p-4 rounded-xl bg-black/20 border border-white/5 hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="font-mono text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        {stat.key}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {stat.count} logs
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium line-clamp-2 mb-2 h-10">
+                      {stat.summary}
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <div className="text-xs text-muted-foreground">
+                        ใช้เวลา
+                      </div>
+                      <div className="text-lg font-bold text-success">
+                        {formatDurationSeconds(stat.totalSeconds)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Error State */}
         {error && (
@@ -749,7 +905,7 @@ ${taskLines}
                             Math.max(
                               0,
                               weeklySummary.targetSeconds -
-                                weeklySummary.totalSeconds,
+                              weeklySummary.totalSeconds,
                             ),
                           )}
                         </span>
@@ -768,7 +924,7 @@ ${taskLines}
                         {Math.round(
                           (weeklySummary.totalSeconds /
                             weeklySummary.targetSeconds) *
-                            100,
+                          100,
                         )}
                         %
                       </span>
@@ -1024,6 +1180,23 @@ ${taskLines}
         }}
         onConfirm={handleDeleteWorklog}
         worklog={selectedWorklog}
+      />
+
+      <BulkDeleteConfirmDialog
+        isOpen={isBulkDeleteDialogOpen}
+        onClose={() => {
+          setIsBulkDeleteDialogOpen(false);
+          setSelectedWorklog(null);
+        }}
+        onConfirm={handleBulkDeleteWorklog}
+        worklog={selectedWorklog}
+        count={
+          selectedWorklog
+            ? filteredWorklogs.filter(
+              (w) => w.issueKey === selectedWorklog.issueKey,
+            ).length
+            : 0
+        }
       />
     </div>
   );

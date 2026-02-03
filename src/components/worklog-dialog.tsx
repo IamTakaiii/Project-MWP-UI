@@ -14,6 +14,7 @@ interface WorklogDialogProps {
   worklog?: WorklogEntry | null; // null = create new, WorklogEntry = edit
   issueKey?: string;
   issueSummary?: string;
+  defaultDate?: string; // yyyy-MM-dd format
 }
 
 export interface WorklogFormData {
@@ -31,6 +32,7 @@ export function WorklogDialog({
   worklog,
   issueKey = "",
   issueSummary = "",
+  defaultDate,
 }: WorklogDialogProps) {
   const isEdit = !!worklog;
 
@@ -61,7 +63,7 @@ export function WorklogDialog({
         // Create mode
         setFormData({
           issueKey: issueKey,
-          date: format(new Date(), "yyyy-MM-dd"),
+          date: defaultDate || format(new Date(), "yyyy-MM-dd"),
           startTime: "09:00",
           timeSpent: "1h",
           comment: "",
@@ -69,7 +71,7 @@ export function WorklogDialog({
       }
       setError(null);
     }
-  }, [isOpen, worklog, issueKey]);
+  }, [isOpen, worklog, issueKey, defaultDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,6 +315,87 @@ export function DeleteConfirmDialog({
             disabled={isLoading}
           >
             {isLoading ? "⏳ กำลังลบ..." : "ลบ"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bulk Delete Confirm Dialog
+interface BulkDeleteConfirmDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  worklog: WorklogEntry | null;
+  count: number;
+}
+
+export function BulkDeleteConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  worklog,
+  count,
+}: BulkDeleteConfirmDialogProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm();
+      onClose();
+    } catch (err) {
+      console.error("Delete error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen || !worklog) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Dialog */}
+      <div className="relative bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+        <h2 className="text-xl font-bold mb-4">🗑️ ลบหลายรายการ</h2>
+
+        <div className="mb-6 p-3 bg-white/5 rounded-lg">
+          <p className="font-mono text-[#4C9AFF]">{worklog.issueKey}</p>
+          <p className="text-sm text-muted-foreground truncate">
+            {worklog.issueSummary}
+          </p>
+        </div>
+
+        <p className="text-muted-foreground mb-6">
+          คุณแน่ใจหรือไม่ที่จะลบ worklog ทั้งหมดของงานนี้ในช่วงเวลานี้?
+          <br />
+          <span className="text-destructive font-bold">
+            จำนวนทั้งหมด {count} รายการ
+          </span>
+        </p>
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 border-white/20"
+            disabled={isLoading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            className="flex-1 bg-destructive hover:bg-destructive/90"
+            disabled={isLoading}
+          >
+            {isLoading ? "⏳ กำลังลบ..." : `ลบ ${count} รายการ`}
           </Button>
         </div>
       </div>

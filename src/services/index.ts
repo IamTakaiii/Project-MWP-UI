@@ -26,6 +26,5 @@ export type {
 export { jiraAuthService, JiraAuthService } from "./auth.service";
 export type { LoginResponse, SessionInfo } from "./auth.service";
 
-// Add more services here:
-// export { calendarService } from './calendar'
-// export { notesService } from './notes'
+// Note: Calendar Service temporarily disabled
+// TODO: Re-enable when Google Calendar integration is ready

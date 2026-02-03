@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { History, Rocket, BarChart3, Terminal, FileJson } from "lucide-react";
+import {
+  History,
+  Rocket,
+  BarChart3,
+  Terminal,
+  FileJson,
+  // Calendar,
+} from "lucide-react";
 
 interface AppCard {
   id: string;
@@ -30,24 +37,7 @@ const apps: AppCard[] = [
     gradient: "from-purple-500 to-pink-400",
     available: true,
   },
-  // {
-  //   id: 'time-tracker',
-  //   title: 'Time Tracker',
-  //   description: 'จับเวลาทำงานแบบ real-time พร้อมบันทึกอัตโนมัติ',
-  //   icon: <Clock className="w-8 h-8" />,
-  //   href: '/tracker',
-  //   gradient: 'from-orange-500 to-amber-400',
-  //   available: false,
-  // },
-  // {
-  //   id: 'calendar-view',
-  //   title: 'Calendar View',
-  //   description: 'ดู worklog ในรูปแบบปฏิทิน วางแผนงานล่วงหน้า',
-  //   icon: <Calendar className="w-8 h-8" />,
-  //   href: '/calendar',
-  //   gradient: 'from-green-500 to-emerald-400',
-  //   available: false,
-  // },
+
   {
     id: "reports",
     title: "Reports & Analytics",
@@ -93,10 +83,9 @@ function AppCardComponent({ app }: { app: AppCard }) {
         group relative overflow-hidden rounded-2xl border border-border/50 
         bg-card/50 backdrop-blur-sm p-6 h-full
         transition-all duration-300 ease-out
-        ${
-          app.available
-            ? "hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer"
-            : "opacity-50 cursor-not-allowed"
+        ${app.available
+          ? "hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer"
+          : "opacity-50 cursor-not-allowed"
         }
       `}
     >

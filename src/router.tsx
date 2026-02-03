@@ -43,6 +43,8 @@ const historyRoute = createRoute({
   },
 });
 
+
+
 // SSE Monitor route
 const sseMonitorRoute = createRoute({
   getParentRoute: () => rootRoute,
