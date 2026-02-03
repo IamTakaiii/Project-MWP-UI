@@ -1,31 +1,38 @@
-import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { ArrowLeft, FileJson, GitCompare, Search, List, TreePine } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { JsonInput } from '@/components/json-input'
-import { JsonViewer } from '@/components/json-viewer'
-import { JsonTreeView } from '@/components/json-tree-view'
-import { ActionButtons } from '@/components/action-buttons'
-import { DiffOutput } from '@/components/diff-output'
-import { useJsonFormatter } from '@/hooks/use-json-formatter'
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  ArrowLeft,
+  FileJson,
+  GitCompare,
+  Search,
+  List,
+  TreePine,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { JsonInput } from "@/components/json-input";
+import { JsonViewer } from "@/components/json-viewer";
+import { JsonTreeView } from "@/components/json-tree-view";
+import { ActionButtons } from "@/components/action-buttons";
+import { DiffOutput } from "@/components/diff-output";
+import { useJsonFormatter } from "@/hooks/use-json-formatter";
 
-type FormatterMode = 'format' | 'diff' | 'query'
+type FormatterMode = "format" | "diff" | "query";
 
 interface ModeTab {
-  id: FormatterMode
-  label: string
-  icon: React.ReactNode
+  id: FormatterMode;
+  label: string;
+  icon: React.ReactNode;
 }
 
 const modeTabs: ModeTab[] = [
-  { id: 'format', label: 'Format', icon: <FileJson className="w-4 h-4" /> },
-  { id: 'diff', label: 'Diff', icon: <GitCompare className="w-4 h-4" /> },
-  { id: 'query', label: 'Query', icon: <Search className="w-4 h-4" /> },
-]
+  { id: "format", label: "Format", icon: <FileJson className="w-4 h-4" /> },
+  { id: "diff", label: "Diff", icon: <GitCompare className="w-4 h-4" /> },
+  { id: "query", label: "Query", icon: <Search className="w-4 h-4" /> },
+];
 
 export function JsonFormatterPage() {
-  const [viewMode, setViewMode] = useState<'text' | 'tree'>('text')
-  const [queryViewMode, setQueryViewMode] = useState<'text' | 'tree'>('tree')
+  const [viewMode, setViewMode] = useState<"text" | "tree">("text");
+  const [queryViewMode, setQueryViewMode] = useState<"text" | "tree">("tree");
   const {
     mode,
     setMode,
@@ -54,7 +61,7 @@ export function JsonFormatterPage() {
     leftError,
     rightError,
     diffResults,
-  } = useJsonFormatter()
+  } = useJsonFormatter();
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -86,9 +93,10 @@ export function JsonFormatterPage() {
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
                 transition-all duration-200
-                ${mode === tab.id
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ${
+                  mode === tab.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }
               `}
             >
@@ -101,7 +109,7 @@ export function JsonFormatterPage() {
         {/* Main Content Area */}
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           {/* Format Mode */}
-          {mode === 'format' && (
+          {mode === "format" && (
             <div className="space-y-6">
               {/* Action Buttons */}
               <ActionButtons
@@ -145,17 +153,18 @@ export function JsonFormatterPage() {
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       Output
                     </label>
-                    
+
                     {/* Tree View Toggle */}
                     <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                       <button
-                        onClick={() => setViewMode('text')}
+                        onClick={() => setViewMode("text")}
                         className={`
                           flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
                           transition-all duration-200
-                          ${viewMode === 'text'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                          ${
+                            viewMode === "text"
+                              ? "bg-background text-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
                           }
                         `}
                       >
@@ -163,13 +172,14 @@ export function JsonFormatterPage() {
                         Text
                       </button>
                       <button
-                        onClick={() => setViewMode('tree')}
+                        onClick={() => setViewMode("tree")}
                         className={`
                           flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
                           transition-all duration-200
-                          ${viewMode === 'tree'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                          ${
+                            viewMode === "tree"
+                              ? "bg-background text-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
                           }
                         `}
                       >
@@ -180,7 +190,7 @@ export function JsonFormatterPage() {
                   </div>
 
                   {/* Output Display */}
-                  {viewMode === 'text' ? (
+                  {viewMode === "text" ? (
                     <JsonViewer
                       value={output}
                       placeholder="ผลลัพธ์จะแสดงที่นี่..."
@@ -190,7 +200,7 @@ export function JsonFormatterPage() {
                       data={parsedJson}
                       onPathClick={(path) => {
                         // Copy path to clipboard
-                        navigator.clipboard.writeText(path)
+                        navigator.clipboard.writeText(path);
                       }}
                     />
                   )}
@@ -200,7 +210,7 @@ export function JsonFormatterPage() {
           )}
 
           {/* Diff Mode */}
-          {mode === 'diff' && (
+          {mode === "diff" && (
             <div className="space-y-6">
               {/* Two Input Areas */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -234,7 +244,7 @@ export function JsonFormatterPage() {
               </div>
 
               {/* Diff Output */}
-              {(leftInput && rightInput) && (
+              {leftInput && rightInput && (
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -247,7 +257,7 @@ export function JsonFormatterPage() {
           )}
 
           {/* Query Mode */}
-          {mode === 'query' && (
+          {mode === "query" && (
             <div className="space-y-6">
               {/* JSON Input with View Toggle */}
               <div className="space-y-3">
@@ -256,17 +266,18 @@ export function JsonFormatterPage() {
                     <span className="w-2 h-2 rounded-full bg-amber-500" />
                     Input JSON
                   </label>
-                  
+
                   {/* View Mode Toggle */}
                   <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                     <button
-                      onClick={() => setQueryViewMode('text')}
+                      onClick={() => setQueryViewMode("text")}
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
                         transition-all duration-200
-                        ${queryViewMode === 'text'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
+                        ${
+                          queryViewMode === "text"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
                         }
                       `}
                     >
@@ -274,13 +285,14 @@ export function JsonFormatterPage() {
                       Text
                     </button>
                     <button
-                      onClick={() => setQueryViewMode('tree')}
+                      onClick={() => setQueryViewMode("tree")}
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium
                         transition-all duration-200
-                        ${queryViewMode === 'tree'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
+                        ${
+                          queryViewMode === "tree"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
                         }
                       `}
                     >
@@ -291,7 +303,7 @@ export function JsonFormatterPage() {
                 </div>
 
                 {/* Input Display */}
-                {queryViewMode === 'text' ? (
+                {queryViewMode === "text" ? (
                   <JsonInput
                     value={input}
                     onChange={setInput}
@@ -302,7 +314,7 @@ export function JsonFormatterPage() {
                   <JsonTreeView
                     data={parsedJson}
                     onPathClick={(path) => {
-                      navigator.clipboard.writeText(path)
+                      navigator.clipboard.writeText(path);
                     }}
                   />
                 )}
@@ -320,8 +332,8 @@ export function JsonFormatterPage() {
                     value={queryPath}
                     onChange={(e) => setQueryPath(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        executeQuery()
+                      if (e.key === "Enter") {
+                        executeQuery();
                       }
                     }}
                     className="flex-1 p-3 bg-muted/30 border border-border rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
@@ -347,7 +359,7 @@ export function JsonFormatterPage() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   ผลลัพธ์
                 </label>
-                
+
                 {queryError && (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                     <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -355,16 +367,16 @@ export function JsonFormatterPage() {
                     </p>
                   </div>
                 )}
-                
+
                 {!queryError && queryResult !== null && (
                   <JsonTreeView
                     data={queryResult}
                     onPathClick={(path) => {
-                      navigator.clipboard.writeText(path)
+                      navigator.clipboard.writeText(path);
                     }}
                   />
                 )}
-                
+
                 {!queryError && queryResult === null && !queryPath && (
                   <div className="p-4 bg-muted/30 border border-border rounded-xl h-32 flex items-center justify-center">
                     <p className="text-sm text-muted-foreground text-center">
@@ -378,5 +390,5 @@ export function JsonFormatterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

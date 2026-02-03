@@ -1,19 +1,19 @@
-import { Textarea } from '@/components/ui/textarea'
-import { AlertCircle } from 'lucide-react'
-import { useRef } from 'react'
-import Editor from 'react-simple-code-editor'
-import Prism from 'prismjs'
-import 'prismjs/components/prism-json'
-import 'prismjs/themes/prism-tomorrow.css'
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle } from "lucide-react";
+import { useRef } from "react";
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/components/prism-json";
+import "prismjs/themes/prism-tomorrow.css";
 
 export interface JsonInputProps {
-  value: string
-  onChange: (value: string) => void
-  error?: string | null
-  placeholder?: string
-  label?: string
-  readOnly?: boolean
-  enableHighlight?: boolean
+  value: string;
+  onChange: (value: string) => void;
+  error?: string | null;
+  placeholder?: string;
+  label?: string;
+  readOnly?: boolean;
+  enableHighlight?: boolean;
 }
 
 /**
@@ -24,16 +24,16 @@ export function JsonInput({
   value,
   onChange,
   error,
-  placeholder = 'วาง JSON ที่นี่...',
+  placeholder = "วาง JSON ที่นี่...",
   label,
   readOnly = false,
   enableHighlight = true,
 }: JsonInputProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const highlightCode = (code: string) => {
-    return Prism.highlight(code, Prism.languages.json, 'json')
-  }
+    return Prism.highlight(code, Prism.languages.json, "json");
+  };
 
   return (
     <>
@@ -46,11 +46,11 @@ export function JsonInput({
 
       <div className="relative w-full h-80">
         {enableHighlight && !error ? (
-          <div 
+          <div
             ref={editorRef}
             className={`
               w-full h-full rounded-xl border border-border overflow-auto
-              ${error ? 'border-destructive' : ''}
+              ${error ? "border-destructive" : ""}
             `}
           >
             <Editor
@@ -61,11 +61,12 @@ export function JsonInput({
               readOnly={readOnly}
               placeholder={placeholder}
               style={{
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                fontSize: '0.875rem',
-                lineHeight: '1.5',
-                minHeight: '100%',
-                backgroundColor: 'transparent',
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                fontSize: "0.875rem",
+                lineHeight: "1.5",
+                minHeight: "100%",
+                backgroundColor: "transparent",
               }}
               textareaClassName="focus:outline-none"
             />
@@ -79,7 +80,7 @@ export function JsonInput({
             aria-invalid={!!error}
             className={`
               w-full h-full font-mono text-sm resize-none overflow-auto
-              ${error ? 'border-destructive' : ''}
+              ${error ? "border-destructive" : ""}
             `}
           />
         )}
@@ -92,5 +93,5 @@ export function JsonInput({
         </div>
       )}
     </>
-  )
+  );
 }

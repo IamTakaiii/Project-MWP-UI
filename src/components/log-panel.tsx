@@ -1,21 +1,19 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import type { LogEntry } from '@/types'
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { LogEntry } from "@/types";
 
 interface LogPanelProps {
-  logs: LogEntry[]
-  onClear: () => void
+  logs: LogEntry[];
+  onClear: () => void;
 }
 
 export function LogPanel({ logs, onClear }: LogPanelProps) {
-  if (logs.length === 0) return null
+  if (logs.length === 0) return null;
 
   return (
     <div className="mt-8 bg-card backdrop-blur-xl border border-border rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-400">
       <div className="flex justify-between items-center px-6 py-4 bg-black/20 border-b border-border">
-        <h3 className="text-base font-semibold text-foreground">
-          📝 Log
-        </h3>
+        <h3 className="text-base font-semibold text-foreground">📝 Log</h3>
         <Button
           variant="ghost"
           size="sm"
@@ -37,10 +35,10 @@ export function LogPanel({ logs, onClear }: LogPanelProps) {
             </span>
             <span
               className={cn(
-                'break-words',
-                log.type === 'success' && 'text-success',
-                log.type === 'error' && 'text-destructive',
-                log.type === 'info' && 'text-[#A5ADBA]'
+                "break-words",
+                log.type === "success" && "text-success",
+                log.type === "error" && "text-destructive",
+                log.type === "info" && "text-[#A5ADBA]",
               )}
             >
               {log.message}
@@ -49,5 +47,5 @@ export function LogPanel({ logs, onClear }: LogPanelProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

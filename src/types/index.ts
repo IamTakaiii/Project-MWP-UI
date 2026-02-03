@@ -1,6 +1,6 @@
 /**
  * Application Types
- * 
+ *
  * Re-exports service types and defines app-specific types
  */
 
@@ -14,7 +14,7 @@ export type {
   WorklogEntry,
   WorklogHistoryResponse,
   DailyWorklog,
-} from '@/services/jira'
+} from "@/services/jira";
 
 // ============================================
 // App-specific Types (not from services)
@@ -22,27 +22,27 @@ export type {
 
 // Worklog creation result
 export interface WorklogResult {
-  success: number
-  failed: number
+  success: number;
+  failed: number;
 }
 
 // Log panel types
-export type LogType = 'info' | 'success' | 'error'
+export type LogType = "info" | "success" | "error";
 
 export interface LogEntry {
-  id: number
-  message: string
-  type: LogType
-  timestamp: string
+  id: number;
+  message: string;
+  type: LogType;
+  timestamp: string;
 }
 
 // Form types
 export interface WorklogFormData {
-  taskId: string
-  startDate: string
-  endDate: string
-  startTime: string
-  timeSpent: string
-  skipWeekends: boolean
-  comment: string
+  taskId: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  timeSpent: string;
+  skipWeekends: boolean;
+  comment: string;
 }

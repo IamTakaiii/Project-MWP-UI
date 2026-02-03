@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -10,88 +10,88 @@ import {
   XCircle,
   Minus,
   Copy,
-} from 'lucide-react'
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from "@/components/ui/tooltip";
 
 export interface JsonTreeViewProps {
-  data: unknown
-  onPathClick?: (path: string) => void
+  data: unknown;
+  onPathClick?: (path: string) => void;
 }
 
 interface TreeNodeProps {
-  name: string
-  value: unknown
-  path: string
-  defaultExpanded?: boolean
-  onPathClick?: (path: string) => void
+  name: string;
+  value: unknown;
+  path: string;
+  defaultExpanded?: boolean;
+  onPathClick?: (path: string) => void;
 }
 
 /**
  * Get data type and corresponding icon/color
  */
 function getTypeInfo(value: unknown): {
-  type: string
-  icon: React.ReactNode
-  color: string
+  type: string;
+  icon: React.ReactNode;
+  color: string;
 } {
   if (value === null) {
     return {
-      type: 'null',
+      type: "null",
       icon: <Minus className="w-3 h-3" />,
-      color: 'text-gray-500',
-    }
+      color: "text-gray-500",
+    };
   }
 
   if (Array.isArray(value)) {
     return {
-      type: 'array',
+      type: "array",
       icon: <Brackets className="w-3 h-3" />,
-      color: 'text-purple-500',
-    }
+      color: "text-purple-500",
+    };
   }
 
-  const type = typeof value
+  const type = typeof value;
 
   switch (type) {
-    case 'object':
+    case "object":
       return {
-        type: 'object',
+        type: "object",
         icon: <Braces className="w-3 h-3" />,
-        color: 'text-blue-500',
-      }
-    case 'string':
+        color: "text-blue-500",
+      };
+    case "string":
       return {
-        type: 'string',
+        type: "string",
         icon: <Type className="w-3 h-3" />,
-        color: 'text-green-500',
-      }
-    case 'number':
+        color: "text-green-500",
+      };
+    case "number":
       return {
-        type: 'number',
+        type: "number",
         icon: <Hash className="w-3 h-3" />,
-        color: 'text-orange-500',
-      }
-    case 'boolean':
+        color: "text-orange-500",
+      };
+    case "boolean":
       return {
-        type: 'boolean',
+        type: "boolean",
         icon: value ? (
           <CheckCircle2 className="w-3 h-3" />
         ) : (
           <XCircle className="w-3 h-3" />
         ),
-        color: value ? 'text-emerald-500' : 'text-red-500',
-      }
+        color: value ? "text-emerald-500" : "text-red-500",
+      };
     default:
       return {
-        type: 'unknown',
+        type: "unknown",
         icon: <Minus className="w-3 h-3" />,
-        color: 'text-gray-500',
-      }
+        color: "text-gray-500",
+      };
   }
 }
 
@@ -99,21 +99,18 @@ function getTypeInfo(value: unknown): {
  * Format value for display
  */
 function formatValue(value: unknown): string {
-  if (value === null) return 'null'
-  if (typeof value === 'string') return `"${value}"`
-  if (typeof value === 'boolean') return value.toString()
-  if (typeof value === 'number') return value.toString()
-  return ''
+  if (value === null) return "null";
+  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "boolean") return value.toString();
+  if (typeof value === "number") return value.toString();
+  return "";
 }
 
 /**
  * Check if value is expandable (object or array)
  */
 function isExpandable(value: unknown): boolean {
-  return (
-    value !== null &&
-    (typeof value === 'object' || Array.isArray(value))
-  )
+  return value !== null && (typeof value === "object" || Array.isArray(value));
 }
 
 /**
@@ -121,13 +118,13 @@ function isExpandable(value: unknown): boolean {
  */
 function getSizeInfo(value: unknown): string {
   if (Array.isArray(value)) {
-    return `[${value.length}]`
+    return `[${value.length}]`;
   }
-  if (value !== null && typeof value === 'object') {
-    const keys = Object.keys(value)
-    return `{${keys.length}}`
+  if (value !== null && typeof value === "object") {
+    const keys = Object.keys(value);
+    return `{${keys.length}}`;
   }
-  return ''
+  return "";
 }
 
 /**
@@ -141,22 +138,22 @@ function TreeNode({
   defaultExpanded = false,
   onPathClick,
 }: TreeNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const typeInfo = getTypeInfo(value)
-  const expandable = isExpandable(value)
-  const sizeInfo = getSizeInfo(value)
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const typeInfo = getTypeInfo(value);
+  const expandable = isExpandable(value);
+  const sizeInfo = getSizeInfo(value);
 
   const handleToggle = () => {
     if (expandable) {
-      setIsExpanded(!isExpanded)
+      setIsExpanded(!isExpanded);
     }
-  }
+  };
 
   const handlePathClick = () => {
     if (onPathClick) {
-      onPathClick(path)
+      onPathClick(path);
     }
-  }
+  };
 
   return (
     <div className="font-mono text-sm">
@@ -179,18 +176,14 @@ function TreeNode({
         </div>
 
         {/* Type Icon */}
-        <div className={`flex-shrink-0 ${typeInfo.color}`}>
-          {typeInfo.icon}
-        </div>
+        <div className={`flex-shrink-0 ${typeInfo.color}`}>{typeInfo.icon}</div>
 
         {/* Key Name */}
         <span className="text-foreground font-semibold">{name}:</span>
 
         {/* Value or Size Info */}
         {expandable ? (
-          <span className="text-muted-foreground text-xs ml-1">
-            {sizeInfo}
-          </span>
+          <span className="text-muted-foreground text-xs ml-1">{sizeInfo}</span>
         ) : (
           <span className="text-muted-foreground ml-1">
             {formatValue(value)}
@@ -203,8 +196,8 @@ function TreeNode({
             <TooltipTrigger asChild>
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handlePathClick()
+                  e.stopPropagation();
+                  handlePathClick();
                 }}
                 className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary hover:underline flex items-center gap-1"
               >
@@ -222,35 +215,33 @@ function TreeNode({
       {/* Children (if expanded) */}
       {expandable && isExpanded && (
         <div className="ml-6 border-l border-border pl-2">
-          {Array.isArray(value) ? (
-            // Array items
-            value.map((item, index) => (
-              <TreeNode
-                key={index}
-                name={`[${index}]`}
-                value={item}
-                path={`${path}[${index}]`}
-                onPathClick={onPathClick}
-              />
-            ))
-          ) : (
-            // Object properties
-            Object.entries(value as Record<string, unknown>).map(
-              ([key, val]) => (
+          {Array.isArray(value)
+            ? // Array items
+              value.map((item, index) => (
                 <TreeNode
-                  key={key}
-                  name={key}
-                  value={val}
-                  path={`${path}.${key}`}
+                  key={index}
+                  name={`[${index}]`}
+                  value={item}
+                  path={`${path}[${index}]`}
                   onPathClick={onPathClick}
                 />
-              )
-            )
-          )}
+              ))
+            : // Object properties
+              Object.entries(value as Record<string, unknown>).map(
+                ([key, val]) => (
+                  <TreeNode
+                    key={key}
+                    name={key}
+                    value={val}
+                    path={`${path}.${key}`}
+                    onPathClick={onPathClick}
+                  />
+                ),
+              )}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -264,7 +255,7 @@ export function JsonTreeView({ data, onPathClick }: JsonTreeViewProps) {
       <div className="p-4 text-center text-muted-foreground text-sm">
         ไม่มีข้อมูลที่จะแสดง
       </div>
-    )
+    );
   }
 
   return (
@@ -277,5 +268,5 @@ export function JsonTreeView({ data, onPathClick }: JsonTreeViewProps) {
         onPathClick={onPathClick}
       />
     </div>
-  )
+  );
 }

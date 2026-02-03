@@ -1,35 +1,39 @@
-import { Link } from '@tanstack/react-router'
-import { ClipboardList, History, ClipboardPaste, LogOut } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { TaskPicker } from './task-picker'
-import { QuickTaskAccess } from './quick-task-access'
-import { STORAGE_KEYS } from '@/lib/constants'
-import type { JiraIssue } from '@/types'
+import { Link } from "@tanstack/react-router";
+import { ClipboardList, History, ClipboardPaste, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TaskPicker } from "./task-picker";
+import { QuickTaskAccess } from "./quick-task-access";
+import { STORAGE_KEYS } from "@/lib/constants";
+import type { JiraIssue } from "@/types";
 
 interface TaskPickerState {
-  isOpen: boolean
-  tasks: JiraIssue[]
-  isLoading: boolean
-  searchText: string
-  statusFilter: string
-  onFetch: () => void
-  onClose: () => void
-  onSearch: () => void
-  onSearchTextChange: (text: string) => void
-  onStatusChange: (status: string) => void
-  onSelectTask: (task: JiraIssue) => void
+  isOpen: boolean;
+  tasks: JiraIssue[];
+  isLoading: boolean;
+  searchText: string;
+  statusFilter: string;
+  onFetch: () => void;
+  onClose: () => void;
+  onSearch: () => void;
+  onSearchTextChange: (text: string) => void;
+  onStatusChange: (status: string) => void;
+  onSelectTask: (task: JiraIssue) => void;
 }
 
 interface TaskDetailsProps {
-  taskId: string
-  jiraUrl: string
-  onTaskIdChange: (value: string) => void
-  onPasteWorklog?: () => void
-  onLogout?: () => void
-  taskPicker: TaskPickerState
+  taskId: string;
+  jiraUrl: string;
+  onTaskIdChange: (value: string) => void;
+  onPasteWorklog?: () => void;
+  onLogout?: () => void;
+  taskPicker: TaskPickerState;
 }
 
 export function TaskDetails({
@@ -40,14 +44,16 @@ export function TaskDetails({
   onLogout,
   taskPicker,
 }: TaskDetailsProps) {
-  const hasCopiedWorklog = typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG)
+  const hasCopiedWorklog =
+    typeof window !== "undefined" &&
+    localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG);
 
   return (
     <section className="mb-8 pb-8 border-b border-border">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
-            <span className="text-2xl">📋</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="flex items-center gap-2 text-lg sm:text-xl font-semibold text-foreground">
+            <span className="text-xl sm:text-2xl">📋</span>
             รายละเอียด Task
           </h2>
           <Tooltip>
@@ -64,7 +70,7 @@ export function TaskDetails({
             </TooltipContent>
           </Tooltip>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {onPasteWorklog && (
             <Button
               type="button"
@@ -78,10 +84,15 @@ export function TaskDetails({
               <span className="hidden sm:inline">วางข้อมูล</span>
             </Button>
           )}
-          <Link to="/history">
-            <Button variant="secondary" size="sm" className="gap-2 bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 hover:text-amber-300">
+          <Link to="/history" search={{ date: undefined }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-2 bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 hover:text-amber-300"
+            >
               <History className="h-4 w-4" />
-              ดูประวัติ
+              <span className="hidden xs:inline">ดูประวัติ</span>
+              <span className="xs:hidden">ประวัติ</span>
             </Button>
           </Link>
           {onLogout && (
@@ -150,5 +161,5 @@ export function TaskDetails({
         onSelectTask={taskPicker.onSelectTask}
       />
     </section>
-  )
+  );
 }

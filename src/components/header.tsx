@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router'
-import { ScrollText, Home } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Link } from "@tanstack/react-router";
+import { ScrollText, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   return (
@@ -22,13 +22,28 @@ export function Header() {
       </div>
 
       <div className="mb-4">
-        <svg viewBox="0 0 32 32" className="w-14 h-14 mx-auto drop-shadow-[0_4px_20px_rgba(76,154,255,0.4)] animate-bounce">
+        <svg
+          viewBox="0 0 32 32"
+          className="w-14 h-14 mx-auto drop-shadow-[0_4px_20px_rgba(76,154,255,0.4)] animate-bounce"
+        >
           <defs>
-            <linearGradient x1="98.031%" y1="0.161%" x2="58.888%" y2="40.766%" id="gradient1">
+            <linearGradient
+              x1="98.031%"
+              y1="0.161%"
+              x2="58.888%"
+              y2="40.766%"
+              id="gradient1"
+            >
               <stop stopColor="#0052CC" offset="0%" />
               <stop stopColor="#2684FF" offset="100%" />
             </linearGradient>
-            <linearGradient x1="100.665%" y1="-17.615%" x2="55.402%" y2="44.248%" id="gradient2">
+            <linearGradient
+              x1="100.665%"
+              y1="-17.615%"
+              x2="55.402%"
+              y2="44.248%"
+              id="gradient2"
+            >
               <stop stopColor="#0052CC" offset="0%" />
               <stop stopColor="#2684FF" offset="100%" />
             </linearGradient>
@@ -46,9 +61,7 @@ export function Header() {
       <h1 className="text-4xl font-bold text-foreground tracking-tight mb-2 drop-shadow-lg">
         JIRA Worklog Creator
       </h1>
-      <p className="text-lg text-[#A5ADBA]">
-        สร้าง worklog หลายวันพร้อมกัน
-      </p>
+      <p className="text-lg text-[#A5ADBA]">สร้าง worklog หลายวันพร้อมกัน</p>
     </header>
-  )
+  );
 }

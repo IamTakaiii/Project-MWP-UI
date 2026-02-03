@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Link, useSearch, useNavigate } from '@tanstack/react-router'
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+import { useState, useEffect, useCallback } from "react";
+import { Link, useSearch, useNavigate } from "@tanstack/react-router";
+import {
+  ChevronLeft,
+  ChevronRight,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
@@ -16,14 +16,19 @@ import {
   Copy,
   CopyPlus,
   Download,
-  ClipboardList
-} from 'lucide-react'
-import { format, differenceInDays, parseISO, startOfWeek, endOfWeek } from 'date-fns'
-import { th } from 'date-fns/locale'
-import { generateDateRange } from '@/lib/date-utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+  ClipboardList,
+} from "lucide-react";
+import {
+  format,
+  differenceInDays,
+  parseISO,
+  startOfWeek,
+  endOfWeek,
+} from "date-fns";
+import { th } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -31,454 +36,402 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { jiraService, type WorklogEntry, type DailyWorklog } from '@/services'
-import { jiraAuthService } from '@/services/auth.service'
-import { WorklogDialog, DeleteConfirmDialog, type WorklogFormData } from '@/components/worklog-dialog'
-import { ContextMenu, useContextMenu, type ContextMenuAction } from '@/components/ui/context-menu'
-import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { STORAGE_KEYS } from '@/lib/constants'
-import { useFavoriteTasks } from '@/hooks/use-favorite-tasks'
+} from "@/components/ui/table";
+import { jiraService, type WorklogEntry } from "@/services";
+import { jiraAuthService } from "@/services/auth.service";
+import {
+  WorklogDialog,
+  DeleteConfirmDialog,
+  type WorklogFormData,
+} from "@/components/worklog-dialog";
+import { DayCard } from "@/components/history/day-card";
+import {
+  ContextMenu,
+  useContextMenu,
+  type ContextMenuAction,
+} from "@/components/ui/context-menu";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { STORAGE_KEYS } from "@/lib/constants";
+import { useFavoriteTasks } from "@/hooks/use-favorite-tasks";
+import { useWorklogStats } from "@/hooks/use-worklog-stats";
+import { formatDurationSeconds, formatTimeRange } from "@/lib/date-utils";
 
-const EIGHT_HOURS_SECONDS = 8 * 60 * 60
+const EIGHT_HOURS_SECONDS = 8 * 60 * 60;
 
-type ViewMode = 'daily' | 'weekly'
-
-function formatTimeSpent(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  if (hours === 0) return `${minutes}m`
-  if (minutes === 0) return `${hours}h`
-  return `${hours}h ${minutes}m`
-}
-
-function formatTimeRange(started: string, timeSpentSeconds: number): string {
-  const startDate = new Date(started)
-  const endDate = new Date(startDate.getTime() + timeSpentSeconds * 1000)
-  return `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`
-}
+type ViewMode = "daily" | "weekly";
 
 export function HistoryPage() {
   // Get date from query params
-  const search = useSearch({ from: '/history' })
-  const dateFromQuery = search.date as string | undefined
-  const navigate = useNavigate({ from: '/history' })
+  const search = useSearch({ from: "/history" });
+  const dateFromQuery = search.date as string | undefined;
+  const navigate = useNavigate({ from: "/history" });
 
   // Session state
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [jiraUrl, setJiraUrl] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [jiraUrl, setJiraUrl] = useState("");
 
   // View mode
-  const [viewMode, setViewMode] = useState<ViewMode>('daily')
+  const [viewMode, setViewMode] = useState<ViewMode>("daily");
 
   // Calculate current week range (Monday-Sunday) - same logic as mini history
   const getCurrentWeekRange = useCallback(() => {
-    const today = new Date()
-    const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
     // Calculate Monday of the current week
-    let start: Date
+    let start: Date;
     if (dayOfWeek === 1) {
       // Today is Monday, use it as start
-      start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-      start.setHours(0, 0, 0, 0)
+      start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      start.setHours(0, 0, 0, 0);
     } else {
       // Use startOfWeek to get Monday of the week containing today
-      start = startOfWeek(today, { weekStartsOn: 1 })
+      start = startOfWeek(today, { weekStartsOn: 1 });
     }
-    
+
     // Always use endOfWeek to get Sunday of the week containing today
-    const end = endOfWeek(today, { weekStartsOn: 1 })
-    
+    const end = endOfWeek(today, { weekStartsOn: 1 });
+
     return {
-      startDate: format(start, 'yyyy-MM-dd'),
-      endDate: format(end, 'yyyy-MM-dd'),
-    }
-  }, [])
+      startDate: format(start, "yyyy-MM-dd"),
+      endDate: format(end, "yyyy-MM-dd"),
+    };
+  }, []);
 
   // Date filter state
-  // If date query param exists, use it for both start and end date (single day view)
-  // Otherwise, use current week range (Monday-Sunday)
-  const currentWeekRange = getCurrentWeekRange()
-  const initialStartDate = dateFromQuery || currentWeekRange.startDate
-  const initialEndDate = dateFromQuery || currentWeekRange.endDate
-  
-  const [startDate, setStartDate] = useState(initialStartDate)
-  const [endDate, setEndDate] = useState(initialEndDate)
-  const [isUserSelectedDate, setIsUserSelectedDate] = useState(false)
+  const currentWeekRange = getCurrentWeekRange();
+  const initialStartDate = dateFromQuery || currentWeekRange.startDate;
+  const initialEndDate = dateFromQuery || currentWeekRange.endDate;
+
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
 
   // Data state
-  const [worklogs, setWorklogs] = useState<WorklogEntry[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [worklogs, setWorklogs] = useState<WorklogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Current day/week navigation
-  const [currentDayIndex, setCurrentDayIndex] = useState(0)
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
   // Dialog state
-  const [isWorklogDialogOpen, setIsWorklogDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedWorklog, setSelectedWorklog] = useState<WorklogEntry | null>(null)
-  const [isDuplicateMode, setIsDuplicateMode] = useState(false)
+  const [isWorklogDialogOpen, setIsWorklogDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedWorklog, setSelectedWorklog] = useState<WorklogEntry | null>(
+    null,
+  );
+  const [isDuplicateMode, setIsDuplicateMode] = useState(false);
 
   // Favorite tasks hook
-  const { recordTaskUsage } = useFavoriteTasks()
+  const { recordTaskUsage } = useFavoriteTasks();
 
   // Context menu
-  const contextMenu = useContextMenu()
-  const [contextMenuWorklog, setContextMenuWorklog] = useState<WorklogEntry | null>(null)
+  const contextMenu = useContextMenu();
+  const [contextMenuWorklog, setContextMenuWorklog] =
+    useState<WorklogEntry | null>(null);
 
-  // Group worklogs by date and include all working days (excluding weekends) in the selected range
-  const dailyWorklogs = useMemo((): DailyWorklog[] => {
-    // First, group worklogs by date
-    const grouped: Record<string, WorklogEntry[]> = {}
-
-    for (const worklog of worklogs) {
-      const date = worklog.started.split('T')[0]
-      if (!grouped[date]) {
-        grouped[date] = []
-      }
-      grouped[date].push(worklog)
-    }
-
-    // Get all working days in the selected date range (excluding weekends)
-    const workingDays = startDate && endDate 
-      ? generateDateRange(startDate, endDate, true) // skipWeekends = true
-      : []
-
-    // Create entries for all working days, including days without worklogs
-    const allDays: DailyWorklog[] = workingDays.map((date) => {
-      const dateStr = format(date, 'yyyy-MM-dd')
-      const logs = grouped[dateStr] || []
-      const totalSeconds = logs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
-      
-      return {
-        date: dateStr,
-        dayName: format(date, 'EEEE', { locale: th }),
-        worklogs: logs.sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime()),
-        totalSeconds,
-        isComplete: totalSeconds >= EIGHT_HOURS_SECONDS,
-      }
-    })
-
-    return allDays.sort((a, b) => a.date.localeCompare(b.date)) // Sort ascending (oldest first)
-  }, [worklogs, startDate, endDate])
-
-  // Weekly summary - target is based on total working days (excluding weekends) in the selected date range
-  const weeklySummary = useMemo(() => {
-    const totalSeconds = worklogs.reduce((sum, log) => sum + log.timeSpentSeconds, 0)
-    
-    // Calculate total working days (excluding weekends) in the selected date range
-    const workingDays = startDate && endDate 
-      ? generateDateRange(startDate, endDate, true) // skipWeekends = true
-      : []
-    
-    const totalWorkingDays = workingDays.length
-    const targetSeconds = totalWorkingDays * EIGHT_HOURS_SECONDS
-    
-    // Days with worklogs
-    const daysWithWorklogs = dailyWorklogs.length
-    // Days that are complete (8 hours or more)
-    const completeDays = dailyWorklogs.filter(d => d.isComplete).length
-    
-    return {
-      totalSeconds,
-      targetSeconds,
-      isComplete: totalSeconds >= targetSeconds,
-      daysWorked: daysWithWorklogs,
-      totalWorkingDays,
-      completeDays,
-      targetHours: totalWorkingDays * 8,
-    }
-  }, [worklogs, dailyWorklogs, startDate, endDate])
+  // Use the custom hook for statistics
+  const { dailyWorklogs, weeklySummary } = useWorklogStats({
+    worklogs,
+    startDate,
+    endDate,
+  });
 
   // Current day data (for daily view)
-  const currentDay = dailyWorklogs[currentDayIndex]
-  const totalDays = dailyWorklogs.length
+  const currentDay = dailyWorklogs[currentDayIndex];
+  const totalDays = dailyWorklogs.length;
 
   // Validation
-  const isDateRangeValid = startDate <= endDate
-  const dateRangeDays = startDate && endDate ? differenceInDays(parseISO(endDate), parseISO(startDate)) : 0
-  const isWithinMonthLimit = dateRangeDays <= 60
-  const dateError = !isDateRangeValid 
-    ? 'วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด' 
-    : !isWithinMonthLimit 
-    ? 'ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)' 
-    : null
+  const isDateRangeValid = startDate <= endDate;
+  const dateRangeDays =
+    startDate && endDate
+      ? differenceInDays(parseISO(endDate), parseISO(startDate))
+      : 0;
+  const isWithinMonthLimit = dateRangeDays <= 60;
+  const dateError = !isDateRangeValid
+    ? "วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด"
+    : !isWithinMonthLimit
+      ? "ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)"
+      : null;
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      setIsCheckingAuth(true)
+      setIsCheckingAuth(true);
       try {
-        const session = await jiraAuthService.getCurrentSession()
-        setIsAuthenticated(session.authenticated)
+        const session = await jiraAuthService.getCurrentSession();
+        setIsAuthenticated(session.authenticated);
         if (session.authenticated && session.jiraUrl) {
-          setJiraUrl(session.jiraUrl)
+          setJiraUrl(session.jiraUrl);
         }
       } catch (error) {
-        setIsAuthenticated(false)
+        setIsAuthenticated(false);
       } finally {
-        setIsCheckingAuth(false)
+        setIsCheckingAuth(false);
       }
-    }
-    checkAuth()
-  }, [])
+    };
+    checkAuth();
+  }, []);
 
   // Fetch worklogs
   const fetchData = useCallback(async () => {
     if (!isAuthenticated) {
-      setError('กรุณาเข้าสู่ระบบก่อน')
-      return
+      setError("กรุณาเข้าสู่ระบบก่อน");
+      return;
     }
 
     if (!isDateRangeValid) {
-      setError('วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด')
-      return
+      setError("วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด");
+      return;
     }
 
     if (!isWithinMonthLimit) {
-      setError('ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)')
-      return
+      setError("ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)");
+      return;
     }
 
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const data = await jiraService.fetchWorklogHistory(startDate, endDate)
-      setWorklogs(data.worklogs || [])
+      const data = await jiraService.fetchWorklogHistory(startDate, endDate);
+      setWorklogs(data.worklogs || []);
       // Only reset to 0 if no dateFromQuery, otherwise will be set by the effect below
       if (!dateFromQuery) {
-        setCurrentDayIndex(0)
+        setCurrentDayIndex(0);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      setError(errorMessage)
-      setWorklogs([])
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(errorMessage);
+      setWorklogs([]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [isAuthenticated, isDateRangeValid, startDate, endDate, dateFromQuery])
+  }, [
+    isAuthenticated,
+    isDateRangeValid,
+    startDate,
+    endDate,
+    dateFromQuery,
+    isWithinMonthLimit,
+  ]);
 
-  // Update dates when query param changes
+  // Sync dates with query param ONLY if it exists
   useEffect(() => {
     if (dateFromQuery) {
       // Single day view from query param
-      setStartDate(dateFromQuery)
-      setEndDate(dateFromQuery)
-      setIsUserSelectedDate(false) // Reset flag when coming from query param
-    } else if (!isUserSelectedDate) {
-      // Only reset to current week range if user hasn't manually selected dates
-      const weekRange = getCurrentWeekRange()
-      setStartDate(weekRange.startDate)
-      setEndDate(weekRange.endDate)
+      setStartDate(dateFromQuery);
+      setEndDate(dateFromQuery);
     }
-  }, [dateFromQuery, getCurrentWeekRange, isUserSelectedDate])
+  }, [dateFromQuery]);
 
   // Auto fetch on mount if authenticated, or when dates change
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
-      fetchData()
+      fetchData();
     }
-  }, [isAuthenticated, isCheckingAuth, fetchData])
+  }, [isAuthenticated, isCheckingAuth, fetchData]);
 
   // Find and set current day index when dateFromQuery is provided and data is loaded
   useEffect(() => {
     if (dateFromQuery && dailyWorklogs.length > 0) {
-      const index = dailyWorklogs.findIndex(day => day.date === dateFromQuery)
+      const index = dailyWorklogs.findIndex(
+        (day) => day.date === dateFromQuery,
+      );
       if (index !== -1) {
-        setCurrentDayIndex(index)
+        setCurrentDayIndex(index);
       }
     }
-  }, [dateFromQuery, dailyWorklogs])
+  }, [dateFromQuery, dailyWorklogs]);
 
-  // Navigation handlers (now correct: index 0 = oldest day)
+  // Navigation handlers
   const goToPreviousDay = () => {
     if (currentDayIndex > 0) {
-      setCurrentDayIndex(prev => prev - 1)
+      setCurrentDayIndex((prev) => prev - 1);
     }
-  }
+  };
 
   const goToNextDay = () => {
     if (currentDayIndex < totalDays - 1) {
-      setCurrentDayIndex(prev => prev + 1)
+      setCurrentDayIndex((prev) => prev + 1);
     }
-  }
+  };
 
   // Generate daily summary markdown and copy to clipboard
   const handleCopyDailySummary = () => {
     if (!currentDay || currentDay.worklogs.length === 0) {
-      toast.error('ไม่มี worklog ในวันที่เลือก')
-      return
+      toast.error("ไม่มี worklog ในวันที่เลือก");
+      return;
     }
 
     // Get unique task summaries from worklogs
-    const uniqueTasks = new Map<string, string>()
+    const uniqueTasks = new Map<string, string>();
     for (const worklog of currentDay.worklogs) {
       if (!uniqueTasks.has(worklog.issueKey)) {
-        uniqueTasks.set(worklog.issueKey, worklog.issueSummary)
+        uniqueTasks.set(worklog.issueKey, worklog.issueSummary);
       }
     }
 
     // Build markdown template
     const taskLines = Array.from(uniqueTasks.entries())
       .map(([key, summary]) => `- ${key} ${summary}`)
-      .join('\n')
+      .join("\n");
 
     const markdown = `เมื่อวาน
 ${taskLines}
 
 วันนี้
-- `
+- `;
 
-    navigator.clipboard.writeText(markdown)
-    toast.success('คัดลอกสรุปงานแล้ว', {
+    navigator.clipboard.writeText(markdown);
+    toast.success("คัดลอกสรุปงานแล้ว", {
       description: `${uniqueTasks.size} tasks • วางใน Slack หรือ Teams ได้เลย`,
-    })
-  }
-
-  // Dialog handlers
-  // const openCreateDialog = () => {
-  //   setSelectedWorklog(null)
-  //   setIsWorklogDialogOpen(true)
-  // }
+    });
+  };
 
   const openEditDialog = (worklog: WorklogEntry) => {
-    setSelectedWorklog(worklog)
-    setIsWorklogDialogOpen(true)
-  }
+    setSelectedWorklog(worklog);
+    setIsWorklogDialogOpen(true);
+  };
 
   const openDeleteDialog = (worklog: WorklogEntry) => {
-    setSelectedWorklog(worklog)
-    setIsDeleteDialogOpen(true)
-  }
+    setSelectedWorklog(worklog);
+    setIsDeleteDialogOpen(true);
+  };
 
   // Context menu handlers
   const handleCopyWorklog = (worklog: WorklogEntry) => {
     // Copy text to clipboard
-    const worklogText = `${worklog.issueKey} | ${worklog.timeSpent} | ${format(new Date(worklog.started), 'dd/MM/yyyy HH:mm')} | ${worklog.comment || '-'}`
-    navigator.clipboard.writeText(worklogText)
-    
+    const worklogText = `${worklog.issueKey} | ${worklog.timeSpent} | ${format(new Date(worklog.started), "dd/MM/yyyy HH:mm")} | ${worklog.comment || "-"}`;
+    navigator.clipboard.writeText(worklogText);
+
     // Store worklog data in localStorage for paste functionality
     const worklogData = {
       issueKey: worklog.issueKey,
       timeSpent: worklog.timeSpent,
-      date: format(new Date(worklog.started), 'yyyy-MM-dd'),
-      startTime: format(new Date(worklog.started), 'HH:mm'),
-      comment: worklog.comment || '',
-    }
-    localStorage.setItem(STORAGE_KEYS.COPIED_WORKLOG, JSON.stringify(worklogData))
-    
-    toast.success('คัดลอกข้อมูล worklog แล้ว', {
+      date: format(new Date(worklog.started), "yyyy-MM-dd"),
+      startTime: format(new Date(worklog.started), "HH:mm"),
+      comment: worklog.comment || "",
+    };
+    localStorage.setItem(
+      STORAGE_KEYS.COPIED_WORKLOG,
+      JSON.stringify(worklogData),
+    );
+
+    toast.success("คัดลอกข้อมูล worklog แล้ว", {
       description: `${worklog.issueKey} - ${worklog.timeSpent} • คลิกปุ่ม "วางข้อมูล" ในหน้า Worklog เพื่อใช้`,
       duration: 5000,
-    })
-  }
+    });
+  };
 
   const handleDuplicateWorklog = (worklog: WorklogEntry) => {
     // Store worklog data in localStorage for paste functionality
     const worklogData = {
       issueKey: worklog.issueKey,
       timeSpent: worklog.timeSpent,
-      date: format(new Date(worklog.started), 'yyyy-MM-dd'),
-      startTime: format(new Date(worklog.started), 'HH:mm'),
-      comment: worklog.comment || '',
-    }
-    localStorage.setItem(STORAGE_KEYS.COPIED_WORKLOG, JSON.stringify(worklogData))
-    
+      date: format(new Date(worklog.started), "yyyy-MM-dd"),
+      startTime: format(new Date(worklog.started), "HH:mm"),
+      comment: worklog.comment || "",
+    };
+    localStorage.setItem(
+      STORAGE_KEYS.COPIED_WORKLOG,
+      JSON.stringify(worklogData),
+    );
+
     // Also open dialog for immediate use
-    setSelectedWorklog(worklog)
-    setIsDuplicateMode(true)
-    setIsWorklogDialogOpen(true)
-    
-    toast.success('เตรียมข้อมูลสำหรับสร้างซ้ำแล้ว', {
+    setSelectedWorklog(worklog);
+    setIsDuplicateMode(true);
+    setIsWorklogDialogOpen(true);
+
+    toast.success("เตรียมข้อมูลสำหรับสร้างซ้ำแล้ว", {
       description: `${worklog.issueKey} - ${worklog.timeSpent} • สามารถใช้ปุ่ม "วางข้อมูล" ในหน้า Worklog ได้`,
       duration: 5000,
-    })
-  }
+    });
+  };
 
-  const getContextMenuActions = (worklog: WorklogEntry): ContextMenuAction[] => {
+  const getContextMenuActions = (
+    worklog: WorklogEntry,
+  ): ContextMenuAction[] => {
     return [
       {
-        label: 'คัดลอก',
+        label: "คัดลอก",
         icon: <Copy className="h-4 w-4" />,
         onClick: () => handleCopyWorklog(worklog),
       },
       {
-        label: 'สร้างซ้ำ',
+        label: "สร้างซ้ำ",
         icon: <CopyPlus className="h-4 w-4" />,
         onClick: () => handleDuplicateWorklog(worklog),
       },
       {
-        label: 'ลบ',
+        label: "ลบ",
         icon: <Trash2 className="h-4 w-4" />,
         onClick: () => openDeleteDialog(worklog),
-        variant: 'destructive',
+        variant: "destructive",
       },
-    ]
-  }
+    ];
+  };
 
   // Save worklog (create or update)
-  const handleSaveWorklog = useCallback(async (formData: WorklogFormData) => {
-    const started = `${formData.date}T${formData.startTime}:00.000+0700`
-    
-    if (selectedWorklog && !isDuplicateMode) {
-      // Update existing
-      await jiraService.updateWorklog(
-        selectedWorklog.issueKey,
-        selectedWorklog.id,
-        {
+  const handleSaveWorklog = useCallback(
+    async (formData: WorklogFormData) => {
+      const started = `${formData.date}T${formData.startTime}:00.000+0700`;
+
+      if (selectedWorklog && !isDuplicateMode) {
+        // Update existing
+        await jiraService.updateWorklog(
+          selectedWorklog.issueKey,
+          selectedWorklog.id,
+          {
+            timeSpent: formData.timeSpent,
+            started,
+            comment: formData.comment,
+          },
+        );
+      } else {
+        // Create new (or duplicate)
+        await jiraService.createWorklog(formData.issueKey, {
           timeSpent: formData.timeSpent,
           started,
           comment: formData.comment,
-        }
-      )
-    } else {
-      // Create new (or duplicate)
-      await jiraService.createWorklog(
-        formData.issueKey,
-        {
-          timeSpent: formData.timeSpent,
-          started,
-          comment: formData.comment,
-        }
-      )
-      
-      // Record task usage when worklog is created successfully
-      const taskForRecording = {
-        id: formData.issueKey,
-        key: formData.issueKey,
-        fields: {
-          summary: selectedWorklog?.issueSummary || '',
-          status: { name: 'Unknown', statusCategory: { key: 'new' } },
-          issuetype: { name: 'Task' },
-        },
+        });
+
+        // Record task usage when worklog is created successfully
+        const taskForRecording = {
+          id: formData.issueKey,
+          key: formData.issueKey,
+          fields: {
+            summary: selectedWorklog?.issueSummary || "",
+            status: { name: "Unknown", statusCategory: { key: "new" } },
+            issuetype: { name: "Task" },
+          },
+        };
+        recordTaskUsage(taskForRecording);
       }
-      recordTaskUsage(taskForRecording)
-    }
-    
-    // Reset duplicate mode
-    setIsDuplicateMode(false)
-    
-    // Refresh data
-    await fetchData()
-  }, [selectedWorklog, isDuplicateMode, fetchData, recordTaskUsage])
+
+      // Reset duplicate mode
+      setIsDuplicateMode(false);
+
+      // Refresh data
+      await fetchData();
+    },
+    [selectedWorklog, isDuplicateMode, fetchData, recordTaskUsage],
+  );
 
   // Delete worklog
   const handleDeleteWorklog = useCallback(async () => {
-    if (!selectedWorklog) return
-    
+    if (!selectedWorklog) return;
+
     await jiraService.deleteWorklog(
       selectedWorklog.issueKey,
-      selectedWorklog.id
-    )
-    
+      selectedWorklog.id,
+    );
+
     // Refresh data
-    await fetchData()
-  }, [selectedWorklog])
+    await fetchData();
+  }, [selectedWorklog, fetchData]);
 
   return (
     <div className="p-4 md:p-8">
@@ -510,33 +463,6 @@ ${taskLines}
             )}
           </div>
         </header>
-        {/* <header className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  📊 Worklog History
-                </h1>
-                <p className="text-[#A5ADBA] mt-1">
-                  ดูประวัติการลง worklog ของคุณ
-                </p>
-              </div>
-            </div>
-            {isAuthenticated && (
-              <Link to="/worklog">
-                <Button className="bg-success hover:bg-success/90 gap-2">
-                  <Plus className="h-4 w-4" />
-                  เพิ่ม Worklog
-                </Button>
-              </Link>
-            )}
-          </div>
-        </header> */}
 
         {/* Date Filter Card */}
         <div className="bg-card/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
@@ -547,10 +473,11 @@ ${taskLines}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('daily')}
+                onClick={() => setViewMode("daily")}
                 className={cn(
-                  'gap-2 rounded-md',
-                  viewMode === 'daily' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                  "gap-2 rounded-md",
+                  viewMode === "daily" &&
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}
               >
                 <Calendar className="h-4 w-4" />
@@ -559,10 +486,11 @@ ${taskLines}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('weekly')}
+                onClick={() => setViewMode("weekly")}
                 className={cn(
-                  'gap-2 rounded-md',
-                  viewMode === 'weekly' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                  "gap-2 rounded-md",
+                  viewMode === "weekly" &&
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}
               >
                 <CalendarDays className="h-4 w-4" />
@@ -572,7 +500,10 @@ ${taskLines}
           </div>
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate" className="text-sm text-muted-foreground">
+              <Label
+                htmlFor="startDate"
+                className="text-sm text-muted-foreground"
+              >
                 วันที่เริ่มต้น (Start Date)
               </Label>
               <Input
@@ -580,32 +511,38 @@ ${taskLines}
                 type="date"
                 value={startDate}
                 onChange={(e) => {
-                  const newStartDate = e.target.value
-                  setStartDate(newStartDate)
-                  setIsUserSelectedDate(true) // Mark that user manually selected date
+                  const newStartDate = e.target.value;
+                  setStartDate(newStartDate);
                   // Clear the date query param when user manually changes the date
                   navigate({
                     search: (prev) => ({ ...prev, date: undefined }),
-                  })
+                  });
                   // If endDate is set and the range would exceed 60 days, adjust endDate
                   if (endDate && newStartDate) {
-                    const daysDiff = differenceInDays(parseISO(endDate), parseISO(newStartDate))
+                    const daysDiff = differenceInDays(
+                      parseISO(endDate),
+                      parseISO(newStartDate),
+                    );
                     if (daysDiff > 60) {
-                      const adjustedEndDate = new Date(parseISO(newStartDate))
-                      adjustedEndDate.setDate(adjustedEndDate.getDate() + 60)
-                      setEndDate(format(adjustedEndDate, 'yyyy-MM-dd'))
+                      const adjustedEndDate = new Date(parseISO(newStartDate));
+                      adjustedEndDate.setDate(adjustedEndDate.getDate() + 60);
+                      setEndDate(format(adjustedEndDate, "yyyy-MM-dd"));
                     }
                   }
                 }}
                 max={endDate}
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
-                  (!isDateRangeValid || !isWithinMonthLimit) && "border-destructive focus:border-destructive"
+                  (!isDateRangeValid || !isWithinMonthLimit) &&
+                    "border-destructive focus:border-destructive",
                 )}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endDate" className="text-sm text-muted-foreground">
+              <Label
+                htmlFor="endDate"
+                className="text-sm text-muted-foreground"
+              >
                 วันที่สิ้นสุด (End Date)
               </Label>
               <Input
@@ -613,61 +550,84 @@ ${taskLines}
                 type="date"
                 value={endDate}
                 onChange={(e) => {
-                  const newEndDate = e.target.value
-                  setIsUserSelectedDate(true) // Mark that user manually selected date
+                  const newEndDate = e.target.value;
                   // Clear the date query param when user manually changes the date
                   navigate({
                     search: (prev) => ({ ...prev, date: undefined }),
-                  })
+                  });
                   // If startDate is set and the range would exceed 60 days, adjust startDate
                   if (startDate && newEndDate) {
-                    const daysDiff = differenceInDays(parseISO(newEndDate), parseISO(startDate))
+                    const daysDiff = differenceInDays(
+                      parseISO(newEndDate),
+                      parseISO(startDate),
+                    );
                     if (daysDiff > 60) {
-                      const adjustedStartDate = new Date(parseISO(newEndDate))
-                      adjustedStartDate.setDate(adjustedStartDate.getDate() - 60)
-                      setStartDate(format(adjustedStartDate, 'yyyy-MM-dd'))
+                      const adjustedStartDate = new Date(parseISO(newEndDate));
+                      adjustedStartDate.setDate(
+                        adjustedStartDate.getDate() - 60,
+                      );
+                      setStartDate(format(adjustedStartDate, "yyyy-MM-dd"));
                     }
                   }
-                  setEndDate(newEndDate)
+                  setEndDate(newEndDate);
                 }}
                 min={startDate}
-                max={startDate ? (() => {
-                  const maxDate = new Date(parseISO(startDate))
-                  maxDate.setDate(maxDate.getDate() + 60)
-                  return format(maxDate, 'yyyy-MM-dd')
-                })() : undefined}
+                max={
+                  startDate
+                    ? (() => {
+                        const maxDate = new Date(parseISO(startDate));
+                        maxDate.setDate(maxDate.getDate() + 60);
+                        return format(maxDate, "yyyy-MM-dd");
+                      })()
+                    : undefined
+                }
                 className={cn(
                   "w-[180px] bg-black/30 border-white/20 focus:border-primary",
-                  (!isDateRangeValid || !isWithinMonthLimit) && "border-destructive focus:border-destructive"
+                  (!isDateRangeValid || !isWithinMonthLimit) &&
+                    "border-destructive focus:border-destructive",
                 )}
               />
             </div>
             <Button
               onClick={fetchData}
-              disabled={isLoading || !isAuthenticated || !isDateRangeValid || !isWithinMonthLimit}
+              disabled={
+                isLoading ||
+                !isAuthenticated ||
+                !isDateRangeValid ||
+                !isWithinMonthLimit
+              }
               className="bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
             >
               <Search className="h-4 w-4 mr-2" />
-              {isLoading ? 'กำลังค้นหา...' : 'Fetch Data'}
+              {isLoading ? "กำลังค้นหา..." : "Fetch Data"}
             </Button>
             <Button
               onClick={async () => {
                 try {
-                  const blob = await jiraService.exportWorklogHistory(startDate, endDate)
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `worklog-${startDate}-${endDate}.xlsx`
-                  document.body.appendChild(a)
-                  a.click()
-                  document.body.removeChild(a)
-                  URL.revokeObjectURL(url)
-                  toast.success('ดาวน์โหลดไฟล์ Excel สำเร็จ')
+                  const blob = await jiraService.exportWorklogHistory(
+                    startDate,
+                    endDate,
+                  );
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `worklog-${startDate}-${endDate}.xlsx`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success("ดาวน์โหลดไฟล์ Excel สำเร็จ");
                 } catch {
-                  toast.error('ไม่สามารถ export ได้')
+                  toast.error("ไม่สามารถ export ได้");
                 }
               }}
-              disabled={isLoading || !isAuthenticated || !isDateRangeValid || !isWithinMonthLimit || worklogs.length === 0}
+              disabled={
+                isLoading ||
+                !isAuthenticated ||
+                !isDateRangeValid ||
+                !isWithinMonthLimit ||
+                worklogs.length === 0
+              }
               variant="outline"
               className="gap-2"
             >
@@ -713,14 +673,19 @@ ${taskLines}
         )}
 
         {/* No Data */}
-        {!isLoading && isAuthenticated && dailyWorklogs.length === 0 && !error && (
-          <div className="text-center py-12 bg-card/50 border border-white/10 rounded-2xl">
-            <p className="text-muted-foreground">ไม่พบ worklog ในช่วงวันที่เลือก</p>
-          </div>
-        )}
+        {!isLoading &&
+          isAuthenticated &&
+          dailyWorklogs.length === 0 &&
+          !error && (
+            <div className="text-center py-12 bg-card/50 border border-white/10 rounded-2xl">
+              <p className="text-muted-foreground">
+                ไม่พบ worklog ในช่วงวันที่เลือก
+              </p>
+            </div>
+          )}
 
         {/* Weekly View */}
-        {!isLoading && viewMode === 'weekly' && dailyWorklogs.length > 0 && (
+        {!isLoading && viewMode === "weekly" && dailyWorklogs.length > 0 && (
           <>
             {/* Weekly Summary Banner */}
             {weeklySummary.isComplete ? (
@@ -733,7 +698,8 @@ ${taskLines}
                         ✅ ครบ {weeklySummary.targetHours} ชั่วโมงแล้ว!
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {weeklySummary.completeDays} / {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
+                        {weeklySummary.completeDays} /{" "}
+                        {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
                       </p>
                     </div>
                   </div>
@@ -741,7 +707,9 @@ ${taskLines}
                     <div className="w-32 h-3 bg-black/20 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-success w-full" />
                     </div>
-                    <span className="text-sm font-medium text-success">100%</span>
+                    <span className="text-sm font-medium text-success">
+                      100%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -751,36 +719,58 @@ ${taskLines}
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <AlertCircle className="h-10 w-10 text-orange-400 animate-pulse" />
-                      <span className="absolute -top-1 -right-1 text-xl">⚠️</span>
+                      <span className="absolute -top-1 -right-1 text-xl">
+                        ⚠️
+                      </span>
                     </div>
                     <div>
                       <p className="text-xl font-bold text-orange-300">
                         🚨 ยังไม่ครบ {weeklySummary.targetHours} ชั่วโมง!
                       </p>
                       <p className="text-muted-foreground">
-                        {weeklySummary.completeDays} / {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
+                        {weeklySummary.completeDays} /{" "}
+                        {weeklySummary.totalWorkingDays} วันที่ครบ 8 ชม.
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-3">
                       <span className="bg-black/30 px-3 py-1.5 rounded-lg text-sm">
-                        ลงไปแล้ว: <span className="font-bold text-orange-400">{formatTimeSpent(weeklySummary.totalSeconds)}</span>
+                        ลงไปแล้ว:{" "}
+                        <span className="font-bold text-orange-400">
+                          {formatDurationSeconds(weeklySummary.totalSeconds)}
+                        </span>
                       </span>
                       <span>→</span>
                       <span className="bg-red-500/20 px-3 py-1.5 rounded-lg text-sm border border-red-500/30">
-                        ยังเหลือ: <span className="font-bold text-red-400">{formatTimeSpent(Math.max(0, weeklySummary.targetSeconds - weeklySummary.totalSeconds))}</span>
+                        ยังเหลือ:{" "}
+                        <span className="font-bold text-red-400">
+                          {formatDurationSeconds(
+                            Math.max(
+                              0,
+                              weeklySummary.targetSeconds -
+                                weeklySummary.totalSeconds,
+                            ),
+                          )}
+                        </span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2 w-full">
                       <div className="w-40 h-3 bg-black/30 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full rounded-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500"
-                          style={{ width: `${Math.min(100, (weeklySummary.totalSeconds / weeklySummary.targetSeconds) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (weeklySummary.totalSeconds / weeklySummary.targetSeconds) * 100)}%`,
+                          }}
                         />
                       </div>
                       <span className="text-sm font-bold text-orange-400">
-                        {Math.round((weeklySummary.totalSeconds / weeklySummary.targetSeconds) * 100)}%
+                        {Math.round(
+                          (weeklySummary.totalSeconds /
+                            weeklySummary.targetSeconds) *
+                            100,
+                        )}
+                        %
                       </span>
                     </div>
                   </div>
@@ -791,9 +781,9 @@ ${taskLines}
             {/* All Days Cards */}
             <div className="space-y-4">
               {dailyWorklogs.map((day) => (
-                <DayCard 
-                  key={day.date} 
-                  day={day} 
+                <DayCard
+                  key={day.date}
+                  day={day}
                   jiraUrl={jiraUrl}
                   onEdit={openEditDialog}
                   onDelete={(worklog) => openDeleteDialog(worklog)}
@@ -806,42 +796,53 @@ ${taskLines}
         )}
 
         {/* Daily View - Day Card with Navigation */}
-        {!isLoading && viewMode === 'daily' && currentDay && (
-          <div className={cn(
-            'bg-card/50 backdrop-blur-sm rounded-2xl overflow-hidden',
-            currentDay.isComplete 
-              ? 'border border-white/10' 
-              : 'border-2 border-orange-500/50'
-          )}>
+        {!isLoading && viewMode === "daily" && currentDay && (
+          <div
+            className={cn(
+              "bg-card/50 backdrop-blur-sm rounded-2xl overflow-hidden",
+              currentDay.isComplete
+                ? "border border-white/10"
+                : "border-2 border-orange-500/50",
+            )}
+          >
             {/* Day Header */}
-            <div className={cn(
-              'p-5 border-b',
-              currentDay.isComplete 
-                ? 'bg-success/10 border-white/10' 
-                : 'bg-gradient-to-r from-orange-500/20 via-red-500/15 to-orange-500/20 border-orange-500/30'
-            )}>
+            <div
+              className={cn(
+                "p-5 border-b",
+                currentDay.isComplete
+                  ? "bg-success/10 border-white/10"
+                  : "bg-gradient-to-r from-orange-500/20 via-red-500/15 to-orange-500/20 border-orange-500/30",
+              )}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold">
-                    วันที่: {format(new Date(currentDay.date), 'dd/MM/yyyy')}
+                    วันที่: {format(new Date(currentDay.date), "dd/MM/yyyy")}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {format(new Date(currentDay.date), 'EEEE', { locale: th })}
+                    {format(new Date(currentDay.date), "EEEE", { locale: th })}
                   </p>
                 </div>
                 {currentDay.isComplete ? (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-success" />
-                    <span className="font-semibold text-success">ครบ 8 ชม.</span>
+                    <span className="font-semibold text-success">
+                      ครบ 8 ชม.
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 bg-orange-500/20 px-4 py-2 rounded-xl border border-orange-500/40">
                     <span className="text-xl animate-pulse">🚨</span>
                     <AlertCircle className="h-5 w-5 text-orange-400 animate-bounce" />
                     <div className="text-right">
-                      <p className="font-bold text-orange-300">ยังไม่ครบ 8 ชม.!</p>
+                      <p className="font-bold text-orange-300">
+                        ยังไม่ครบ 8 ชม.!
+                      </p>
                       <p className="text-xs text-orange-400/80">
-                        เหลืออีก {formatTimeSpent(EIGHT_HOURS_SECONDS - currentDay.totalSeconds)}
+                        เหลืออีก{" "}
+                        {formatDurationSeconds(
+                          EIGHT_HOURS_SECONDS - currentDay.totalSeconds,
+                        )}
                       </p>
                     </div>
                   </div>
@@ -852,10 +853,18 @@ ${taskLines}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
                 <div className="flex items-center gap-3">
                   <p className="text-sm">
-                    รวมเวลาวันนี้: <span className={cn(
-                      'font-semibold',
-                      currentDay.isComplete ? 'text-success' : 'text-orange-400'
-                    )}>{formatTimeSpent(currentDay.totalSeconds)}</span> / 8h
+                    รวมเวลาวันนี้:{" "}
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        currentDay.isComplete
+                          ? "text-success"
+                          : "text-orange-400",
+                      )}
+                    >
+                      {formatDurationSeconds(currentDay.totalSeconds)}
+                    </span>{" "}
+                    / 8h
                   </p>
                   <Button
                     variant="outline"
@@ -910,21 +919,23 @@ ${taskLines}
                     <TableHead>Comment</TableHead>
                     <TableHead className="w-[130px]">From - To</TableHead>
                     <TableHead className="w-[80px] text-right">Time</TableHead>
-                    <TableHead className="w-[100px] text-right">Actions</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentDay.worklogs.map((worklog) => (
-                    <TableRow 
-                      key={worklog.id} 
+                    <TableRow
+                      key={worklog.id}
                       className="border-white/10 hover:bg-white/5 relative"
                       onContextMenu={(e) => {
-                        setContextMenuWorklog(worklog)
-                        contextMenu.openMenu(e)
+                        setContextMenuWorklog(worklog);
+                        contextMenu.openMenu(e);
                       }}
                     >
                       <TableCell className="font-mono font-semibold text-[#4C9AFF]">
-                        <a 
+                        <a
                           href={`${jiraUrl}/browse/${worklog.issueKey}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -933,12 +944,17 @@ ${taskLines}
                           {worklog.issueKey}
                         </a>
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{worklog.issueSummary}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {worklog.issueSummary}
+                      </TableCell>
                       <TableCell className="text-muted-foreground max-w-[150px] truncate">
-                        {worklog.comment || '-'}
+                        {worklog.comment || "-"}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        {formatTimeRange(worklog.started, worklog.timeSpentSeconds)}
+                        {formatTimeRange(
+                          worklog.started,
+                          worklog.timeSpentSeconds,
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         {worklog.timeSpent}
@@ -981,8 +997,8 @@ ${taskLines}
           position={contextMenu.position}
           actions={getContextMenuActions(contextMenuWorklog)}
           onClose={() => {
-            contextMenu.closeMenu()
-            setContextMenuWorklog(null)
+            contextMenu.closeMenu();
+            setContextMenuWorklog(null);
           }}
         />
       )}
@@ -991,9 +1007,9 @@ ${taskLines}
       <WorklogDialog
         isOpen={isWorklogDialogOpen}
         onClose={() => {
-          setIsWorklogDialogOpen(false)
-          setSelectedWorklog(null)
-          setIsDuplicateMode(false)
+          setIsWorklogDialogOpen(false);
+          setSelectedWorklog(null);
+          setIsDuplicateMode(false);
         }}
         onSave={handleSaveWorklog}
         worklog={isDuplicateMode ? null : selectedWorklog}
@@ -1003,190 +1019,12 @@ ${taskLines}
       <DeleteConfirmDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => {
-          setIsDeleteDialogOpen(false)
-          setSelectedWorklog(null)
+          setIsDeleteDialogOpen(false);
+          setSelectedWorklog(null);
         }}
         onConfirm={handleDeleteWorklog}
         worklog={selectedWorklog}
       />
     </div>
-  )
-}
-
-// Component สำหรับแสดงการ์ดแต่ละวัน (Weekly View)
-interface DayCardProps {
-  day: DailyWorklog
-  jiraUrl: string
-  onEdit: (worklog: WorklogEntry) => void
-  onDelete: (worklog: WorklogEntry) => void
-  onCopy: (worklog: WorklogEntry) => void
-  onDuplicate: (worklog: WorklogEntry) => void
-}
-
-function DayCard({ day, jiraUrl, onEdit, onDelete, onCopy, onDuplicate }: DayCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const contextMenu = useContextMenu()
-  const [contextMenuWorklog, setContextMenuWorklog] = useState<WorklogEntry | null>(null)
-
-  const getContextMenuActions = (worklog: WorklogEntry): ContextMenuAction[] => {
-    return [
-      {
-        label: 'คัดลอก',
-        icon: <Copy className="h-4 w-4" />,
-        onClick: () => onCopy(worklog),
-      },
-      {
-        label: 'สร้างซ้ำ',
-        icon: <CopyPlus className="h-4 w-4" />,
-        onClick: () => onDuplicate(worklog),
-      },
-      {
-        label: 'ลบ',
-        icon: <Trash2 className="h-4 w-4" />,
-        onClick: () => onDelete(worklog),
-        variant: 'destructive',
-      },
-    ]
-  }
-
-  return (
-    <div className={cn(
-      'bg-card/50 backdrop-blur-sm border rounded-2xl overflow-hidden transition-all',
-      day.isComplete ? 'border-success/30' : 'border-white/10'
-    )}>
-      {/* Day Header - Clickable */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={cn(
-          'w-full p-4 flex items-center justify-between text-left transition-colors',
-          day.isComplete ? 'bg-success/10 hover:bg-success/15' : 'bg-black/20 hover:bg-black/30'
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            'w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg',
-            day.isComplete ? 'bg-success/20 text-success' : 'bg-white/10 text-muted-foreground'
-          )}>
-            {format(new Date(day.date), 'd')}
-          </div>
-          <div>
-            <p className="font-semibold">
-              {format(new Date(day.date), 'EEEE', { locale: th })}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {format(new Date(day.date), 'd MMMM yyyy', { locale: th })}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {day.worklogs.length} รายการ
-          </span>
-          <span className={cn(
-            'font-semibold',
-            day.isComplete ? 'text-success' : 'text-warning'
-          )}>
-            {formatTimeSpent(day.totalSeconds)}
-          </span>
-          {day.isComplete ? (
-            <CheckCircle2 className="h-5 w-5 text-success" />
-          ) : (
-            <AlertCircle className="h-5 w-5 text-warning" />
-          )}
-          <ChevronRight className={cn(
-            'h-5 w-5 text-muted-foreground transition-transform',
-            isExpanded && 'rotate-90'
-          )} />
-        </div>
-      </button>
-
-      {/* Expanded Content */}
-      {isExpanded && (
-        <div className="p-4 border-t border-white/10">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="w-[100px]">Issue</TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead className="w-[120px]">เวลา</TableHead>
-                <TableHead className="w-[70px] text-right">ระยะเวลา</TableHead>
-                <TableHead className="w-[90px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {day.worklogs.map((worklog) => (
-                <TableRow 
-                  key={worklog.id} 
-                  className="border-white/10 hover:bg-white/5 relative"
-                  onContextMenu={(e) => {
-                    setContextMenuWorklog(worklog)
-                    contextMenu.openMenu(e)
-                  }}
-                >
-                  <TableCell className="font-mono font-semibold text-[#4C9AFF]">
-                    <a 
-                      href={`${jiraUrl}/browse/${worklog.issueKey}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline"
-                    >
-                      {worklog.issueKey}
-                    </a>
-                  </TableCell>
-                  <TableCell className="truncate max-w-[200px]">{worklog.issueSummary}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {formatTimeRange(worklog.started, worklog.timeSpentSeconds)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {worklog.timeSpent}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEdit(worklog)
-                        }}
-                        className="h-7 w-7 hover:bg-white/10 hover:text-[#4C9AFF]"
-                        title="แก้ไข"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDelete(worklog)
-                        }}
-                        className="h-7 w-7 hover:bg-destructive/20 hover:text-destructive"
-                        title="ลบ"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Context Menu */}
-      {contextMenuWorklog && (
-        <ContextMenu
-          isOpen={contextMenu.isOpen}
-          position={contextMenu.position}
-          actions={getContextMenuActions(contextMenuWorklog)}
-          onClose={() => {
-            contextMenu.closeMenu()
-            setContextMenuWorklog(null)
-          }}
-        />
-      )}
-    </div>
-  )
+  );
 }

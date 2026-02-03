@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
-import { Combobox } from '@/components/ui/combobox'
-import { TIME_SPENT_OPTIONS } from '@/lib/constants'
-import { formatDateTag, formatTimeSpent } from '@/lib/date-utils'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
+import { TIME_SPENT_OPTIONS } from "@/lib/constants";
+import { formatDateTag, formatTimeSpent } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 
-type DateMode = 'single' | 'range'
+type DateMode = "single" | "range";
 
 interface DateTimeFormProps {
-  startDate: string
-  endDate: string
-  startTime: string
-  timeSpent: string
-  skipWeekends: boolean
-  comment: string
-  previewDates: Date[]
-  onStartDateChange: (value: string) => void
-  onEndDateChange: (value: string) => void
-  onStartTimeChange: (value: string) => void
-  onTimeSpentChange: (value: string) => void
-  onSkipWeekendsChange: (value: boolean) => void
-  onCommentChange: (value: string) => void
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  timeSpent: string;
+  skipWeekends: boolean;
+  comment: string;
+  previewDates: Date[];
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onStartTimeChange: (value: string) => void;
+  onTimeSpentChange: (value: string) => void;
+  onSkipWeekendsChange: (value: boolean) => void;
+  onCommentChange: (value: string) => void;
 }
 
 export function DateTimeForm({
@@ -42,21 +42,21 @@ export function DateTimeForm({
   onSkipWeekendsChange,
   onCommentChange,
 }: DateTimeFormProps) {
-  const [dateMode, setDateMode] = useState<DateMode>('single')
+  const [dateMode, setDateMode] = useState<DateMode>("single");
 
   // Sync endDate with startDate when in single mode
   useEffect(() => {
-    if (dateMode === 'single' && startDate) {
-      onEndDateChange(startDate)
+    if (dateMode === "single" && startDate) {
+      onEndDateChange(startDate);
     }
-  }, [dateMode, startDate, onEndDateChange])
+  }, [dateMode, startDate, onEndDateChange]);
 
   const handleDateModeChange = (mode: DateMode) => {
-    setDateMode(mode)
-    if (mode === 'single' && startDate) {
-      onEndDateChange(startDate)
+    setDateMode(mode);
+    if (mode === "single" && startDate) {
+      onEndDateChange(startDate);
     }
-  }
+  };
 
   return (
     <section className="mb-8">
@@ -72,12 +72,12 @@ export function DateTimeForm({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => handleDateModeChange('single')}
+            onClick={() => handleDateModeChange("single")}
             className={cn(
-              'rounded-md px-3 h-8 text-sm',
-              dateMode === 'single' 
-                ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' 
-                : 'text-muted-foreground hover:text-foreground'
+              "rounded-md px-3 h-8 text-sm",
+              dateMode === "single"
+                ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             วันเดียว
@@ -86,12 +86,12 @@ export function DateTimeForm({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => handleDateModeChange('range')}
+            onClick={() => handleDateModeChange("range")}
             className={cn(
-              'rounded-md px-3 h-8 text-sm',
-              dateMode === 'range' 
-                ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' 
-                : 'text-muted-foreground hover:text-foreground'
+              "rounded-md px-3 h-8 text-sm",
+              dateMode === "range"
+                ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             หลายวัน
@@ -100,9 +100,11 @@ export function DateTimeForm({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className={cn("space-y-2", dateMode === 'single' && "md:col-span-2")}>
+        <div
+          className={cn("space-y-2", dateMode === "single" && "md:col-span-2")}
+        >
           <Label htmlFor="startDate">
-            {dateMode === 'single' ? 'วันที่' : 'วันที่เริ่มต้น'}
+            {dateMode === "single" ? "วันที่" : "วันที่เริ่มต้น"}
           </Label>
           <Input
             id="startDate"
@@ -114,7 +116,7 @@ export function DateTimeForm({
           />
         </div>
 
-        {dateMode === 'range' && (
+        {dateMode === "range" && (
           <div className="space-y-2">
             <Label htmlFor="endDate">วันที่สิ้นสุด</Label>
             <Input
@@ -153,12 +155,14 @@ export function DateTimeForm({
         </div>
       </div>
 
-      {dateMode === 'range' && (
+      {dateMode === "range" && (
         <div className="flex items-center gap-3 mt-5">
           <Checkbox
             id="skipWeekends"
             checked={skipWeekends}
-            onCheckedChange={(checked) => onSkipWeekendsChange(checked as boolean)}
+            onCheckedChange={(checked) =>
+              onSkipWeekendsChange(checked as boolean)
+            }
           />
           <Label htmlFor="skipWeekends" className="cursor-pointer">
             ข้ามวันเสาร์-อาทิตย์
@@ -197,5 +201,5 @@ export function DateTimeForm({
         </div>
       )}
     </section>
-  )
+  );
 }

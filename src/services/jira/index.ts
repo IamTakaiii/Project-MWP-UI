@@ -1,4 +1,4 @@
-export { jiraService, JiraService } from './jira.service'
+export { jiraService, JiraService } from "./jira.service";
 export type {
   JiraCredentials,
   JiraIssue,
@@ -8,4 +8,4 @@ export type {
   WorklogEntry,
   WorklogHistoryResponse,
   DailyWorklog,
-} from './jira.types'
+} from "./jira.types";

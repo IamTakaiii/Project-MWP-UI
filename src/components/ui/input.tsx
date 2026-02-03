@@ -1,22 +1,30 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-function Input({ className, type, onClick, ...props }: React.ComponentProps<"input">) {
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  
+function Input({
+  className,
+  type,
+  onClick,
+  ...props
+}: React.ComponentProps<"input">) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
     // Auto open picker for date/time inputs when clicking anywhere on the input
-    if ((type === 'date' || type === 'time' || type === 'datetime-local') && inputRef.current) {
+    if (
+      (type === "date" || type === "time" || type === "datetime-local") &&
+      inputRef.current
+    ) {
       try {
-        inputRef.current.showPicker()
+        inputRef.current.showPicker();
       } catch {
         // showPicker() may not be supported in all browsers
       }
     }
-    onClick?.(e)
-  }
-  
+    onClick?.(e);
+  };
+
   return (
     <input
       ref={inputRef}
@@ -28,12 +36,13 @@ function Input({ className, type, onClick, ...props }: React.ComponentProps<"inp
         "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         "[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-        (type === 'date' || type === 'time' || type === 'datetime-local') && "cursor-pointer",
-        className
+        (type === "date" || type === "time" || type === "datetime-local") &&
+          "cursor-pointer",
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Input }
+export { Input };

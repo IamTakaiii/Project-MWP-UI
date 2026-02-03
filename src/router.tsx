@@ -1,84 +1,96 @@
-import { createRouter, createRootRoute, createRoute } from '@tanstack/react-router'
-import RootLayout from '@/layouts/root-layout'
-import { HomePage } from '@/pages/home'
-import { WorklogPage } from '@/pages/worklog'
-import { HistoryPage } from '@/pages/history'
-import { SSEMonitorPage } from '@/pages/sse-monitor'
-import { JsonFormatterPage } from '@/pages/json-formatter'
-import { ChangelogPage } from '@/pages/changelog'
-import { EpicReportPage } from '@/pages/epic-report'
+import {
+  createRouter,
+  createRootRoute,
+  createRoute,
+} from "@tanstack/react-router";
+import RootLayout from "@/layouts/root-layout";
+import { HomePage } from "@/pages/home";
+import { WorklogPage } from "@/pages/worklog";
+import { HistoryPage } from "@/pages/history";
+import { SSEMonitorPage } from "@/pages/sse-monitor";
+import { JsonFormatterPage } from "@/pages/json-formatter";
+import { ChangelogPage } from "@/pages/changelog";
+import { EpicReportPage } from "@/pages/epic-report";
 
 // Root route
 const rootRoute = createRootRoute({
   component: RootLayout,
-})
+});
 
 // Home route (App selector)
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: HomePage,
-})
+});
 
 // Worklog creator route
 const worklogRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/worklog',
+  path: "/worklog",
   component: WorklogPage,
-})
+});
 
 // History route
 const historyRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/history',
+  path: "/history",
   component: HistoryPage,
   validateSearch: (search: Record<string, unknown>) => {
     return {
-      date: (search.date as string | undefined),
-    }
+      date: search.date as string | undefined,
+    };
   },
-})
+});
 
 // SSE Monitor route
 const sseMonitorRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sse-monitor',
+  path: "/sse-monitor",
   component: SSEMonitorPage,
-})
+});
 
 // JSON Formatter route
 const jsonFormatterRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/json-formatter',
+  path: "/json-formatter",
   component: JsonFormatterPage,
-})
+});
 
 // Changelog route
 const changelogRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/changelog',
+  path: "/changelog",
   component: ChangelogPage,
-})
+});
 
 // Epic Report route
 const epicReportRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/epic-report',
+  path: "/epic-report",
   component: EpicReportPage,
-})
+});
 
 // Route tree
-const routeTree = rootRoute.addChildren([indexRoute, worklogRoute, historyRoute, sseMonitorRoute, jsonFormatterRoute, changelogRoute, epicReportRoute])
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  worklogRoute,
+  historyRoute,
+  sseMonitorRoute,
+  jsonFormatterRoute,
+  changelogRoute,
+  epicReportRoute,
+]);
 
 // Create router
 export const router = createRouter({
   routeTree,
-  defaultPreload: 'intent',
-})
+  defaultPreload: "intent",
+});
 
 // Type declaration for router
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router
+    router: typeof router;
   }
 }

@@ -1,42 +1,44 @@
-import { useState, type FormEvent } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { jiraAuthService } from '@/services/auth.service'
+import { useState, type FormEvent } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { jiraAuthService } from "@/services/auth.service";
 
 interface LoginFormProps {
-  onLoginSuccess?: () => void
+  onLoginSuccess?: () => void;
 }
 
 export function ConnectionForm({ onLoginSuccess }: LoginFormProps) {
-  const [jiraUrl, setJiraUrl] = useState('')
-  const [email, setEmail] = useState('')
-  const [apiToken, setApiToken] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [jiraUrl, setJiraUrl] = useState("");
+  const [email, setEmail] = useState("");
+  const [apiToken, setApiToken] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      await jiraAuthService.login({ jiraUrl, email, apiToken })
+      await jiraAuthService.login({ jiraUrl, email, apiToken });
       // Clear sensitive data from state
-      setApiToken('')
-      onLoginSuccess?.()
+      setApiToken("");
+      onLoginSuccess?.();
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ credentials'
-      setError(errorMessage)
+        err instanceof Error
+          ? err.message
+          : "เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ credentials";
+      setError(errorMessage);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    handleLogin()
-  }
+    e.preventDefault();
+    handleLogin();
+  };
 
   return (
     <section className="mb-8 pb-8 border-b border-border">
@@ -105,11 +107,16 @@ export function ConnectionForm({ onLoginSuccess }: LoginFormProps) {
         )}
 
         <div className="md:col-span-2">
-          <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full">
-            {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </Button>
         </div>
       </div>
     </section>
-  )
+  );
 }

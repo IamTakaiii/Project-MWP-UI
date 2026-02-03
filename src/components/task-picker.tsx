@@ -1,14 +1,14 @@
-import { useState } from 'react'
-import { X, Search, Zap } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { X, Search, Zap } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,27 +16,27 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { STATUS_OPTIONS, ADMIN_TASKS } from '@/lib/constants'
-import { useFavoriteTasks } from '@/hooks/use-favorite-tasks'
-import type { JiraIssue } from '@/types'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/table";
+import { STATUS_OPTIONS, ADMIN_TASKS } from "@/lib/constants";
+import { useFavoriteTasks } from "@/hooks/use-favorite-tasks";
+import type { JiraIssue } from "@/types";
+import { cn } from "@/lib/utils";
 
-type TabType = 'my-tasks' | 'admin-tasks'
+type TabType = "my-tasks" | "admin-tasks";
 
 interface TaskPickerProps {
-  isOpen: boolean
-  tasks: JiraIssue[]
-  isLoading: boolean
-  searchText: string
-  statusFilter: string
-  selectedTaskId: string
-  jiraUrl: string
-  onClose: () => void
-  onSearch: () => void
-  onSearchTextChange: (text: string) => void
-  onStatusChange: (status: string) => void
-  onSelectTask: (task: JiraIssue) => void
+  isOpen: boolean;
+  tasks: JiraIssue[];
+  isLoading: boolean;
+  searchText: string;
+  statusFilter: string;
+  selectedTaskId: string;
+  jiraUrl: string;
+  onClose: () => void;
+  onSearch: () => void;
+  onSearchTextChange: (text: string) => void;
+  onStatusChange: (status: string) => void;
+  onSelectTask: (task: JiraIssue) => void;
 }
 
 export function TaskPicker({
@@ -53,56 +53,56 @@ export function TaskPicker({
   onStatusChange,
   onSelectTask,
 }: TaskPickerProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('my-tasks')
-  const { allTasks } = useFavoriteTasks()
+  const [activeTab, setActiveTab] = useState<TabType>("my-tasks");
+  const { allTasks } = useFavoriteTasks();
 
   const handleSelectTask = (task: JiraIssue) => {
     // Record task usage immediately to update summary
     // This ensures summary is always up-to-date when selecting from task picker
-    onSelectTask(task)
-  }
+    onSelectTask(task);
+  };
 
   // Get usage info for a task
   const getTaskUsage = (taskKey: string) => {
-    return allTasks.find((t) => t.taskKey === taskKey)
-  }
+    return allTasks.find((t) => t.taskKey === taskKey);
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      onSearch()
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSearch();
     }
-  }
+  };
 
   const getStatusColor = (statusCategory?: string) => {
     switch (statusCategory) {
-      case 'done':
-        return 'bg-success/20 text-success'
-      case 'indeterminate':
-        return 'bg-[#4C9AFF]/20 text-[#4C9AFF]'
-      case 'new':
-      case 'undefined':
-        return 'bg-muted text-muted-foreground'
+      case "done":
+        return "bg-success/20 text-success";
+      case "indeterminate":
+        return "bg-[#4C9AFF]/20 text-[#4C9AFF]";
+      case "new":
+      case "undefined":
+        return "bg-muted text-muted-foreground";
       default:
-        return 'bg-warning/20 text-warning'
+        return "bg-warning/20 text-warning";
     }
-  }
+  };
 
-  const handleSelectAdminTask = (adminTask: typeof ADMIN_TASKS[number]) => {
+  const handleSelectAdminTask = (adminTask: (typeof ADMIN_TASKS)[number]) => {
     // Convert admin task to JiraIssue format
     const task: JiraIssue = {
       id: adminTask.key,
       key: adminTask.key,
       fields: {
         summary: adminTask.summary,
-        status: { name: 'Admin', statusCategory: { key: 'indeterminate' } },
-        issuetype: { name: 'Admin Task' },
+        status: { name: "Admin", statusCategory: { key: "indeterminate" } },
+        issuetype: { name: "Admin Task" },
       },
-    }
-    handleSelectTask(task)
-  }
+    };
+    handleSelectTask(task);
+  };
 
   return (
     <div className="mt-6 bg-black/30 border border-border rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -124,38 +124,38 @@ export function TaskPicker({
       {/* Tabs */}
       <div className="flex border-b border-border overflow-x-auto">
         <button
-          onClick={() => setActiveTab('my-tasks')}
+          onClick={() => setActiveTab("my-tasks")}
           className={cn(
-            'px-4 py-3 text-sm font-medium transition-colors relative shrink-0',
-            activeTab === 'my-tasks'
-              ? 'text-[#4C9AFF] bg-[#4C9AFF]/10'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+            "px-4 py-3 text-sm font-medium transition-colors relative shrink-0",
+            activeTab === "my-tasks"
+              ? "text-[#4C9AFF] bg-[#4C9AFF]/10"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/5",
           )}
         >
           📋 Tasks ของฉัน ({tasks.length})
-          {activeTab === 'my-tasks' && (
+          {activeTab === "my-tasks" && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4C9AFF]" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('admin-tasks')}
+          onClick={() => setActiveTab("admin-tasks")}
           className={cn(
-            'px-4 py-3 text-sm font-medium transition-colors relative shrink-0',
-            activeTab === 'admin-tasks'
-              ? 'text-purple-400 bg-purple-400/10'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+            "px-4 py-3 text-sm font-medium transition-colors relative shrink-0",
+            activeTab === "admin-tasks"
+              ? "text-purple-400 bg-purple-400/10"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/5",
           )}
         >
           <Zap className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />
           Admin ({ADMIN_TASKS.length})
-          {activeTab === 'admin-tasks' && (
+          {activeTab === "admin-tasks" && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />
           )}
         </button>
       </div>
 
       {/* My Tasks Tab Content */}
-      {activeTab === 'my-tasks' && (
+      {activeTab === "my-tasks" && (
         <>
           {/* Filters */}
           <div className="flex gap-3 p-4 bg-black/15 border-b border-border">
@@ -205,59 +205,63 @@ export function TaskPicker({
                     <TableHead className="text-[#A5ADBA]">Summary</TableHead>
                     <TableHead className="text-[#A5ADBA]">Status</TableHead>
                     <TableHead className="text-[#A5ADBA]">Type</TableHead>
-                    <TableHead className="text-[#A5ADBA] w-[80px]">Usage</TableHead>
+                    <TableHead className="text-[#A5ADBA] w-[80px]">
+                      Usage
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tasks.map((task) => (
-                      <TableRow
-                        key={task.id}
-                        onClick={() => handleSelectTask(task)}
-                        className={cn(
-                          'cursor-pointer border-border transition-colors',
-                          selectedTaskId === task.key
-                            ? 'bg-[#4C9AFF]/20'
-                            : 'hover:bg-[#4C9AFF]/10'
-                        )}
-                      >
-                        <TableCell className="font-mono font-semibold text-[#4C9AFF]">
-                          <a
-                            href={`${jiraUrl}/browse/${task.key}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="hover:underline"
-                            title="เปิดใน JIRA"
-                          >
-                            {task.key}
-                          </a>
-                        </TableCell>
-                        <TableCell className="max-w-[300px] truncate">
-                          {task.fields.summary}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              'inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase',
-                              getStatusColor(task.fields.status?.statusCategory?.key)
-                            )}
-                          >
-                            {task.fields.status?.name || '-'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-[#A5ADBA]">
-                          {task.fields.issuetype?.name || '-'}
-                        </TableCell>
-                        <TableCell className="text-[#A5ADBA] text-sm">
-                          {(() => {
-                            const usage = getTaskUsage(task.key)
-                            if (usage) {
-                              return <span>{usage.useCount}x</span>
-                            }
-                            return '-'
-                          })()}
-                        </TableCell>
-                      </TableRow>
+                    <TableRow
+                      key={task.id}
+                      onClick={() => handleSelectTask(task)}
+                      className={cn(
+                        "cursor-pointer border-border transition-colors",
+                        selectedTaskId === task.key
+                          ? "bg-[#4C9AFF]/20"
+                          : "hover:bg-[#4C9AFF]/10",
+                      )}
+                    >
+                      <TableCell className="font-mono font-semibold text-[#4C9AFF]">
+                        <a
+                          href={`${jiraUrl}/browse/${task.key}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:underline"
+                          title="เปิดใน JIRA"
+                        >
+                          {task.key}
+                        </a>
+                      </TableCell>
+                      <TableCell className="max-w-[300px] truncate">
+                        {task.fields.summary}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase",
+                            getStatusColor(
+                              task.fields.status?.statusCategory?.key,
+                            ),
+                          )}
+                        >
+                          {task.fields.status?.name || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-[#A5ADBA]">
+                        {task.fields.issuetype?.name || "-"}
+                      </TableCell>
+                      <TableCell className="text-[#A5ADBA] text-sm">
+                        {(() => {
+                          const usage = getTaskUsage(task.key);
+                          if (usage) {
+                            return <span>{usage.useCount}x</span>;
+                          }
+                          return "-";
+                        })()}
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -267,7 +271,7 @@ export function TaskPicker({
       )}
 
       {/* Admin Tasks Tab Content */}
-      {activeTab === 'admin-tasks' && (
+      {activeTab === "admin-tasks" && (
         <div className="max-h-[400px] overflow-y-auto">
           <div className="p-2">
             {ADMIN_TASKS.map((task) => (
@@ -275,10 +279,10 @@ export function TaskPicker({
                 key={task.key}
                 onClick={() => handleSelectAdminTask(task)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors',
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors",
                   selectedTaskId === task.key
-                    ? 'bg-purple-500/20 border border-purple-500/30'
-                    : 'hover:bg-white/5'
+                    ? "bg-purple-500/20 border border-purple-500/30"
+                    : "hover:bg-white/5",
                 )}
               >
                 <Zap className="w-4 h-4 text-purple-400 shrink-0" />
@@ -292,5 +296,5 @@ export function TaskPicker({
         </div>
       )}
     </div>
-  )
+  );
 }

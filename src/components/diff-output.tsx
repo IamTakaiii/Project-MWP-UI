@@ -1,8 +1,8 @@
-import { Plus, Minus, Edit, CheckCircle2 } from 'lucide-react'
-import type { DiffResult } from '@/lib/json-utils'
+import { Plus, Minus, Edit, CheckCircle2 } from "lucide-react";
+import type { DiffResult } from "@/lib/json-utils";
 
 interface DiffOutputProps {
-  results: DiffResult[]
+  results: DiffResult[];
 }
 
 export function DiffOutput({ results }: DiffOutputProps) {
@@ -17,13 +17,13 @@ export function DiffOutput({ results }: DiffOutputProps) {
           JSON ทั้งสองชุดเหมือนกันทุกประการ
         </p>
       </div>
-    )
+    );
   }
 
   // Group results by type
-  const added = results.filter(r => r.type === 'added')
-  const removed = results.filter(r => r.type === 'removed')
-  const modified = results.filter(r => r.type === 'modified')
+  const added = results.filter((r) => r.type === "added");
+  const removed = results.filter((r) => r.type === "removed");
+  const modified = results.filter((r) => r.type === "modified");
 
   return (
     <div className="space-y-4">
@@ -100,7 +100,7 @@ export function DiffOutput({ results }: DiffOutputProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function DiffItem({ result }: { result: DiffResult }) {
@@ -108,11 +108,12 @@ function DiffItem({ result }: { result: DiffResult }) {
     <div
       className={`
         p-3 rounded-lg border
-        ${result.type === 'added' 
-          ? 'bg-emerald-500/10 border-emerald-500/30' 
-          : result.type === 'removed'
-          ? 'bg-red-500/10 border-red-500/30'
-          : 'bg-amber-500/10 border-amber-500/30'
+        ${
+          result.type === "added"
+            ? "bg-emerald-500/10 border-emerald-500/30"
+            : result.type === "removed"
+              ? "bg-red-500/10 border-red-500/30"
+              : "bg-amber-500/10 border-amber-500/30"
         }
       `}
     >
@@ -123,7 +124,7 @@ function DiffItem({ result }: { result: DiffResult }) {
 
       {/* Values */}
       <div className="space-y-1">
-        {result.type === 'added' && (
+        {result.type === "added" && (
           <div className="flex items-start gap-2">
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
               ค่าใหม่:
@@ -133,8 +134,8 @@ function DiffItem({ result }: { result: DiffResult }) {
             </div>
           </div>
         )}
-        
-        {result.type === 'removed' && (
+
+        {result.type === "removed" && (
           <div className="flex items-start gap-2">
             <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-0.5">
               ค่าเดิม:
@@ -144,8 +145,8 @@ function DiffItem({ result }: { result: DiffResult }) {
             </div>
           </div>
         )}
-        
-        {result.type === 'modified' && (
+
+        {result.type === "modified" && (
           <>
             <div className="flex items-start gap-2">
               <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-0.5">
@@ -167,19 +168,19 @@ function DiffItem({ result }: { result: DiffResult }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function formatValue(value: unknown): string {
-  if (value === null) return 'null'
-  if (value === undefined) return 'undefined'
-  if (typeof value === 'string') return `"${value}"`
-  if (typeof value === 'object') {
-    const str = JSON.stringify(value, null, 2)
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "object") {
+    const str = JSON.stringify(value, null, 2);
     // If it's a short object/array, show inline
-    if (str.length < 100) return str
+    if (str.length < 100) return str;
     // Otherwise show first line with ellipsis
-    return str.split('\n')[0] + '...'
+    return str.split("\n")[0] + "...";
   }
-  return String(value)
+  return String(value);
 }

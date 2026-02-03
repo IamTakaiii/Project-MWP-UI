@@ -1,33 +1,33 @@
-import { Link } from '@tanstack/react-router'
-import { History, Rocket, BarChart3, Terminal, FileJson } from 'lucide-react'
+import { Link } from "@tanstack/react-router";
+import { History, Rocket, BarChart3, Terminal, FileJson } from "lucide-react";
 
 interface AppCard {
-  id: string
-  title: string
-  description: string
-  icon: React.ReactNode
-  href: string
-  gradient: string
-  available: boolean
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  gradient: string;
+  available: boolean;
 }
 
 const apps: AppCard[] = [
   {
-    id: 'worklog-creator',
-    title: 'Jira Worklog Creator',
-    description: 'สร้าง worklog หลายวันพร้อมกัน',
+    id: "worklog-creator",
+    title: "Jira Worklog Creator",
+    description: "สร้าง worklog หลายวันพร้อมกัน",
     icon: <Rocket className="w-8 h-8" />,
-    href: '/worklog',
-    gradient: 'from-blue-500 to-cyan-400',
+    href: "/worklog",
+    gradient: "from-blue-500 to-cyan-400",
     available: true,
   },
   {
-    id: 'worklog-history',
-    title: 'Jira Worklog History',
-    description: 'ดูประวัติ worklog แก้ไข ลบ และตรวจสอบชั่วโมงทำงาน',
+    id: "worklog-history",
+    title: "Jira Worklog History",
+    description: "ดูประวัติ worklog แก้ไข ลบ และตรวจสอบชั่วโมงทำงาน",
     icon: <History className="w-8 h-8" />,
-    href: '/history',
-    gradient: 'from-purple-500 to-pink-400',
+    href: "/history",
+    gradient: "from-purple-500 to-pink-400",
     available: true,
   },
   // {
@@ -49,12 +49,12 @@ const apps: AppCard[] = [
   //   available: false,
   // },
   {
-    id: 'reports',
-    title: 'Reports & Analytics',
-    description: 'วิเคราะห์เวลาทำงาน สร้างรายงานรายสัปดาห์/เดือน',
+    id: "reports",
+    title: "Reports & Analytics",
+    description: "วิเคราะห์เวลาทำงาน สร้างรายงานรายสัปดาห์/เดือน",
     icon: <BarChart3 className="w-8 h-8" />,
-    href: '/epic-report',
-    gradient: 'from-rose-500 to-red-400',
+    href: "/epic-report",
+    gradient: "from-rose-500 to-red-400",
     available: true,
   },
   // {
@@ -67,24 +67,24 @@ const apps: AppCard[] = [
   //   available: false,
   // },
   {
-    id: 'sse-monitor',
-    title: 'SSE Monitor',
-    description: 'ดู Server-Sent Events แบบ real-time สำหรับ debug',
+    id: "sse-monitor",
+    title: "SSE Monitor",
+    description: "ดู Server-Sent Events แบบ real-time สำหรับ debug",
     icon: <Terminal className="w-8 h-8" />,
-    href: '/sse-monitor',
-    gradient: 'from-emerald-500 to-teal-400',
+    href: "/sse-monitor",
+    gradient: "from-emerald-500 to-teal-400",
     available: true,
   },
   {
-    id: 'json-formatter',
-    title: 'JSON Formatter',
-    description: 'จัดรูปแบบ ตรวจสอบ เปรียบเทียบ และ query JSON',
+    id: "json-formatter",
+    title: "JSON Formatter",
+    description: "จัดรูปแบบ ตรวจสอบ เปรียบเทียบ และ query JSON",
     icon: <FileJson className="w-8 h-8" />,
-    href: '/json-formatter',
-    gradient: 'from-amber-500 to-orange-400',
+    href: "/json-formatter",
+    gradient: "from-amber-500 to-orange-400",
     available: true,
   },
-]
+];
 
 function AppCardComponent({ app }: { app: AppCard }) {
   const cardContent = (
@@ -93,9 +93,10 @@ function AppCardComponent({ app }: { app: AppCard }) {
         group relative overflow-hidden rounded-2xl border border-border/50 
         bg-card/50 backdrop-blur-sm p-6 h-full
         transition-all duration-300 ease-out
-        ${app.available
-          ? 'hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer'
-          : 'opacity-50 cursor-not-allowed'
+        ${
+          app.available
+            ? "hover:border-primary/50 hover:shadow-[0_8px_40px_rgba(0,82,204,0.15)] hover:-translate-y-1 cursor-pointer"
+            : "opacity-50 cursor-not-allowed"
         }
       `}
     >
@@ -104,7 +105,7 @@ function AppCardComponent({ app }: { app: AppCard }) {
         className={`
           absolute inset-0 opacity-0 transition-opacity duration-300
           bg-gradient-to-br ${app.gradient}
-          ${app.available ? 'group-hover:opacity-5' : ''}
+          ${app.available ? "group-hover:opacity-5" : ""}
         `}
       />
 
@@ -114,7 +115,7 @@ function AppCardComponent({ app }: { app: AppCard }) {
           inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4
           bg-gradient-to-br ${app.gradient} text-white
           shadow-lg transition-transform duration-300
-          ${app.available ? 'group-hover:scale-110' : ''}
+          ${app.available ? "group-hover:scale-110" : ""}
         `}
       >
         {app.icon}
@@ -136,23 +137,25 @@ function AppCardComponent({ app }: { app: AppCard }) {
       {/* Arrow indicator */}
       {app.available && (
         <div className="absolute bottom-6 right-6 opacity-0 transform translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${app.gradient} flex items-center justify-center text-white`}>
+          <div
+            className={`w-8 h-8 rounded-full bg-gradient-to-br ${app.gradient} flex items-center justify-center text-white`}
+          >
             →
           </div>
         </div>
       )}
     </div>
-  )
+  );
 
   if (app.available) {
     return (
       <Link to={app.href} className="block h-full">
         {cardContent}
       </Link>
-    )
+    );
   }
 
-  return cardContent
+  return cardContent;
 }
 
 export function HomePage() {
@@ -182,5 +185,5 @@ export function HomePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
