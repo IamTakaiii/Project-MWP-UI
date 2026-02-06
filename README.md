@@ -28,7 +28,7 @@
 - **Build Tool:** [Vite](https://vitejs.dev/)
 - **Language:** [TypeScript](https://www.typescriptlang.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components:** [Radix UI](https://www.radix-ui.com/) / Shadcn UI Pattern
+- **UI Components:** [Radix UI](https://www.radix-ui.com/) / [Shadcn UI](https://ui.shadcn.com/) Pattern
 - **Routing:** [TanStack Router](https://tanstack.com/router)
 - **Icons:** [Lucide React](https://lucide.dev/)
 
