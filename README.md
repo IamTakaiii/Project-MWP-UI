@@ -56,9 +56,9 @@ src/
 ├── assets/         # ไฟล์รูปภาพและ static assets
 ├── components/     # UI Components ที่ใช้ร่วมกัน
 ├── config/         # การตั้งค่าต่างๆ ของระบบ
-├── hooks/          # Custom React Hooks
+├── hooks/          # Custom React Hooks ของโปรเจค
 ├── layouts/        # Layout หลักของหน้าเว็บ (เช่น RootLayout)
-├── lib/            # Utility functions และ libraries
+├── lib/            # ฟังก์ชันเสริมและไลบรารีต่างๆ
 ├── pages/          # หน้าเว็บหลักของแต่ละเครื่องมือ
 │   ├── home.tsx            # หน้าเลือกเครื่องมือ
 │   ├── worklog.tsx         # หน้า Worklog Creator
@@ -67,10 +67,9 @@ src/
 │   ├── json-formatter.tsx  # หน้า JSON Formatter
 │   └── ...
 ├── services/       # API services และ logic การเชื่อมต่อข้อมูล
-├── types/          # TypeScript definitions
-├── main.tsx        # Entry point ของ Application
+├── types/          # ประเภทข้อมูลของ TypeScript
+├── main.tsx        # จุดเริ่มต้นของแอปพลิเคชัน
 └── router.tsx      # การตั้งค่า Routing (TanStack Router)
-```
 
 ## 📜 คำสั่งที่ใช้บ่อย (Scripts)
 
