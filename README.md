@@ -70,6 +70,7 @@ src/
 ├── types/          # ประเภทข้อมูลของ TypeScript
 ├── main.tsx        # จุดเริ่มต้นของแอปพลิเคชัน
 └── router.tsx      # การตั้งค่า Routing (TanStack Router)
+```
 
 ## 📜 คำสั่งที่ใช้บ่อย (Scripts)
 
