@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "@tanstack/react-router";
 import { jiraService, jiraAuthService } from "@/services";
+import { PageContainer, PageHeader } from "@/components";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +30,6 @@ import {
   Loader2,
   Search,
   Calendar,
-  ArrowLeft,
   ChevronDown,
   Layers,
   User,
@@ -276,30 +275,14 @@ export function EpicReportPage() {
   const [activeTab, setActiveTab] = useState("monthly-report");
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-8 max-w-6xl">
+    <PageContainer>
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link to="/">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 hover:bg-white/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/25">
-          <BarChart3 className="w-7 h-7" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text">
-            Epic Reports
-          </h1>
-          <p className="text-muted-foreground mt-0.5">
-            วิเคราะห์ worklog และ performance ของทีม
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Epic Reports"
+        description="วิเคราะห์ worklog และ performance ของทีม"
+        icon={<BarChart3 className="h-5 w-5" />}
+        iconGradient="from-violet-500 to-purple-600"
+      />
 
       <Tabs
         value={activeTab}
@@ -331,7 +314,7 @@ export function EpicReportPage() {
           <SingleEpicReportTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }
 

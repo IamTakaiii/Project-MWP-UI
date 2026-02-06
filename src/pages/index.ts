@@ -4,3 +4,4 @@ export { HistoryPage } from "./history";
 export { SSEMonitorPage } from "./sse-monitor";
 export { JsonFormatterPage } from "./json-formatter";
 export { ChangelogPage } from "./changelog";
+export { WorklogTrackingPage } from "./worklog-tracking";

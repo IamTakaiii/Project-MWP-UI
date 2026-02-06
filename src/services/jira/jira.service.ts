@@ -1,10 +1,23 @@
 /**
- * Jira API Service
+ * Jira API Service (Facade)
  *
- * Handles all Jira-related API calls through the backend proxy.
+ * Main entry point for Jira-related API calls.
+ * Delegates to specialized services for better separation of concerns.
+ *
+ * For new code, prefer using the specialized services directly:
+ * - worklogService: Worklog CRUD operations
+ * - taskService: Task fetching
+ * - reportService: Reports and analytics
+ * - exportService: Excel exports
+ * - trackingService: Worklog tracking
  */
 
 import { ApiClient, getServiceConfig } from "../api";
+import { worklogService } from "./worklog.service";
+import { taskService } from "./task.service";
+import { reportService } from "./report.service";
+import { exportService } from "./export.service";
+import { trackingService } from "./tracking.service";
 import type {
   JiraSearchResponse,
   WorklogData,
@@ -15,328 +28,174 @@ import type {
   MonthlyReportResponse,
   ProjectResponse,
   BoardResponse,
+  WorklogTrackingCheckResponse,
+  WorklogTrackingSummaryResponse,
+  WorklogTrackingFailedResponse,
+  WorklogTrackingIssueHistoryResponse,
 } from "./jira.types";
 
 /**
- * Build Atlassian Document Format comment
- */
-function buildCommentPayload(comment: string) {
-  return {
-    type: "doc" as const,
-    version: 1,
-    content: [
-      {
-        type: "paragraph" as const,
-        content: [
-          {
-            type: "text" as const,
-            text: comment,
-          },
-        ],
-      },
-    ],
-  };
-}
-
-/**
- * Jira Service Class
+ * Jira Service Class (Facade)
+ *
+ * Maintains backward compatibility while delegating to specialized services.
+ * @deprecated For new code, use specialized services directly
  */
 class JiraService extends ApiClient {
   constructor() {
     super(getServiceConfig("jira"));
   }
 
-  /**
-   * Create a worklog entry for a Jira issue
-   * Uses session-based authentication (no credentials needed)
-   */
-  async createWorklog(
-    taskId: string,
-    worklogData: WorklogData,
-  ): Promise<unknown> {
-    const payload = {
-      timeSpent: worklogData.timeSpent,
-      started: worklogData.started,
-      ...(worklogData.comment && {
-        comment: buildCommentPayload(worklogData.comment),
-      }),
-    };
+  // ============================================
+  // Worklog Operations (delegates to worklogService)
+  // ============================================
 
-    return this.post("/api/v1/worklog", {
-      taskId,
-      payload,
-    });
+  async createWorklog(taskId: string, worklogData: WorklogData): Promise<unknown> {
+    return worklogService.create(taskId, worklogData);
   }
 
-  /**
-   * Update an existing worklog
-   * Uses session-based authentication (no credentials needed)
-   */
   async updateWorklog(
     issueKey: string,
     worklogId: string,
     worklogData: WorklogData,
   ): Promise<unknown> {
-    const payload = {
-      timeSpent: worklogData.timeSpent,
-      started: worklogData.started,
-      ...(worklogData.comment !== undefined && {
-        comment: worklogData.comment
-          ? buildCommentPayload(worklogData.comment)
-          : undefined,
-      }),
-    };
-
-    return this.put("/api/v1/worklog", {
-      issueKey,
-      worklogId,
-      payload,
-    });
+    return worklogService.update(issueKey, worklogId, worklogData);
   }
 
-  /**
-   * Delete a worklog entry
-   * Uses session-based authentication (no credentials needed)
-   */
   async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
-    await this.delete("/api/v1/worklog", {
-      issueKey,
-      worklogId,
-    });
+    return worklogService.remove(issueKey, worklogId);
   }
 
-  /**
-   * Fetch tasks assigned to the current user
-   * Uses session-based authentication (no credentials needed)
-   */
-  async fetchMyTasks(
-    filters: TaskFilters = { searchText: "", status: "In Progress" },
-  ): Promise<JiraSearchResponse> {
-    return this.post<JiraSearchResponse>("/api/v1/my-tasks", {
-      searchText: filters.searchText,
-      status: filters.status,
-    });
-  }
-
-  /**
-   * Fetch worklog history for a date range
-   * Uses session-based authentication (no credentials needed)
-   */
   async fetchWorklogHistory(
     startDate: string,
     endDate: string,
   ): Promise<WorklogHistoryResponse> {
-    return this.post<WorklogHistoryResponse>("/api/v1/worklog/history", {
-      startDate,
-      endDate,
-    });
+    return worklogService.getHistory(startDate, endDate);
   }
 
-  /**
-   * Fetch worklog report for an Epic
-   */
-  async fetchEpicWorklogReport(
-    epicKey: string,
-  ): Promise<EpicWorklogReportResponse> {
-    return this.post<EpicWorklogReportResponse>("/api/v1/worklog/epic-report", {
-      epicKey,
-    });
+  // ============================================
+  // Task Operations (delegates to taskService)
+  // ============================================
+
+  async fetchMyTasks(
+    filters: TaskFilters = { searchText: "", status: "In Progress" },
+  ): Promise<JiraSearchResponse> {
+    return taskService.getMyTasks(filters);
   }
 
-  /**
-   * Fetch active Epics within date range
-   */
+  // ============================================
+  // Report Operations (delegates to reportService)
+  // ============================================
+
+  async fetchEpicWorklogReport(epicKey: string): Promise<EpicWorklogReportResponse> {
+    return reportService.getEpicWorklogReport(epicKey);
+  }
+
   async fetchActiveEpics(
     startDate: string,
     endDate: string,
   ): Promise<ActiveEpicResponse[]> {
-    return this.post<ActiveEpicResponse[]>("/api/v1/worklog/active-epics", {
-      startDate,
-      endDate,
-    });
+    return reportService.getActiveEpics(startDate, endDate);
   }
 
-  /**
-   * Export worklog history to Excel
-   */
-  async exportWorklogHistory(
-    startDate: string,
-    endDate: string,
-  ): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/history`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ startDate, endDate }),
-      },
-    );
-    if (!response.ok) throw new Error("Failed to export worklog history");
-    return response.blob();
-  }
-
-  /**
-   * Export Epic report to Excel
-   */
-  async exportEpicReport(epicKey: string): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/epic-report`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ epicKey }),
-      },
-    );
-    if (!response.ok) throw new Error("Failed to export epic report");
-    return response.blob();
-  }
-
-  /**
-   * Export active epics to Excel
-   */
-  async exportActiveEpics(startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/active-epics`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ startDate, endDate }),
-      },
-    );
-    if (!response.ok) throw new Error("Failed to export active epics");
-    return response.blob();
-  }
-
-  /**
-   * Fetch monthly report
-   */
   async fetchMonthlyReport(
     startDate: string,
     endDate: string,
   ): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>("/api/v1/worklog/monthly-report", {
-      startDate,
-      endDate,
-    });
+    return reportService.getMonthlyReport(startDate, endDate);
   }
 
-  /**
-   * Fetch monthly report by project
-   */
   async fetchMonthlyReportByProject(
     projectKey: string,
     startDate: string,
     endDate: string,
   ): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>(
-      "/api/v1/worklog/monthly-report-by-project",
-      {
-        projectKey,
-        startDate,
-        endDate,
-      },
-    );
+    return reportService.getMonthlyReportByProject(projectKey, startDate, endDate);
   }
 
-  /**
-   * Fetch monthly report by board
-   */
   async fetchMonthlyReportByBoard(
     boardId: number,
     startDate: string,
     endDate: string,
   ): Promise<MonthlyReportResponse> {
-    return this.post<MonthlyReportResponse>(
-      "/api/v1/worklog/monthly-report-by-board",
-      {
-        boardId,
-        startDate,
-        endDate,
-      },
-    );
+    return reportService.getMonthlyReportByBoard(boardId, startDate, endDate);
   }
 
-  /**
-   * Export monthly report to Excel
-   */
+  async fetchMyProjects(): Promise<ProjectResponse[]> {
+    return reportService.getMyProjects();
+  }
+
+  async fetchBoards(): Promise<BoardResponse[]> {
+    return reportService.getBoards();
+  }
+
+  // ============================================
+  // Export Operations (delegates to exportService)
+  // ============================================
+
+  async exportWorklogHistory(startDate: string, endDate: string): Promise<Blob> {
+    return exportService.exportWorklogHistory(startDate, endDate);
+  }
+
+  async exportEpicReport(epicKey: string): Promise<Blob> {
+    return exportService.exportEpicReport(epicKey);
+  }
+
+  async exportActiveEpics(startDate: string, endDate: string): Promise<Blob> {
+    return exportService.exportActiveEpics(startDate, endDate);
+  }
+
   async exportMonthlyReport(startDate: string, endDate: string): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/monthly-report`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ startDate, endDate }),
-      },
-    );
-    if (!response.ok) throw new Error("Failed to export monthly report");
-    return response.blob();
+    return exportService.exportMonthlyReport(startDate, endDate);
   }
 
-  /**
-   * Export monthly report by project to Excel
-   */
   async exportMonthlyReportByProject(
     projectKey: string,
     startDate: string,
     endDate: string,
   ): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/monthly-report-by-project`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ projectKey, startDate, endDate }),
-      },
-    );
-    if (!response.ok)
-      throw new Error("Failed to export monthly report by project");
-    return response.blob();
+    return exportService.exportMonthlyReportByProject(projectKey, startDate, endDate);
   }
 
-  /**
-   * Fetch user's projects
-   */
-  async fetchMyProjects(): Promise<ProjectResponse[]> {
-    return this.get<ProjectResponse[]>("/api/v1/worklog/projects");
-  }
-
-  /**
-   * Fetch boards
-   */
-  async fetchBoards(): Promise<BoardResponse[]> {
-    return this.get<BoardResponse[]>("/api/v1/worklog/boards");
-  }
-
-  /**
-   * Export monthly report by board to Excel
-   */
   async exportMonthlyReportByBoard(
     boardId: number,
     startDate: string,
     endDate: string,
   ): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/worklog/export/monthly-report-by-board`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ boardId, startDate, endDate }),
-      },
-    );
-    if (!response.ok)
-      throw new Error("Failed to export monthly report by board");
-    return response.blob();
+    return exportService.exportMonthlyReportByBoard(boardId, startDate, endDate);
   }
 
-  /**
-   * Check if the API server is healthy
-   */
+  // ============================================
+  // Tracking Operations (delegates to trackingService)
+  // ============================================
+
+  async checkWorklogTracking(date: string): Promise<WorklogTrackingCheckResponse> {
+    return trackingService.checkStatus(date);
+  }
+
+  async getWorklogTrackingSummary(
+    startDate: string,
+    endDate: string,
+  ): Promise<WorklogTrackingSummaryResponse> {
+    return trackingService.getSummary(startDate, endDate);
+  }
+
+  async getFailedWorklogTracking(
+    startDate: string,
+    endDate: string,
+  ): Promise<WorklogTrackingFailedResponse> {
+    return trackingService.getFailedSubmissions(startDate, endDate);
+  }
+
+  async getIssueTrackingHistory(
+    issueKey: string,
+  ): Promise<WorklogTrackingIssueHistoryResponse> {
+    return trackingService.getIssueHistory(issueKey);
+  }
+
+  // ============================================
+  // Health Check
+  // ============================================
+
   async healthCheck(): Promise<{ status: string }> {
     return this.get<{ status: string }>("/api/health");
   }

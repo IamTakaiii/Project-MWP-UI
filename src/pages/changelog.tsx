@@ -1,6 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft, GitCommit, Sparkles, Bug, Wrench } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GitCommit, Sparkles, Bug, Wrench } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components";
 
 interface ChangelogEntry {
   version: string;
@@ -12,6 +11,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.4.0",
+    date: "6 ก.พ. 2569",
+    changes: [
+      {
+        type: "feature",
+        description: "เพิ่มฟีเจอร์ความสามารถตรวจสอบการทำงานของ Worklog Tracking ในหน้า Worklog Tracking",
+      },
+      {
+        type: "feature",
+        description: "เพิ่ม navbar",
+      }
+    ],
+  },
   {
     version: "1.3.0",
     date: "4 ก.พ. 2569",
@@ -40,10 +53,6 @@ const CHANGELOG: ChangelogEntry[] = [
         type: "improvement",
         description:
           "เพิ่มปุ่มย่อ/ขยายส่วนสรุปงานในหน้า History (เริ่มต้นแบบซ่อน)",
-      },
-      {
-        type: "improvement",
-        description: "นำฟีเจอร์ Calendar View ออกจากระบบเพื่อความสะอาดของ UI",
       },
     ],
   },
@@ -144,29 +153,14 @@ const typeLabel = {
 
 export function ChangelogPage() {
   return (
-    <div className="p-4 md:p-8">
-      <div className="max-w-[800px] mx-auto">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-violet-500/20">
-                <GitCommit className="h-6 w-6 text-violet-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Change Log</h1>
-                <p className="text-sm text-muted-foreground">
-                  ประวัติการอัปเดตและการเปลี่ยนแปลง
-                </p>
-              </div>
-            </div>
-          </div>
-        </header>
+    <PageContainer>
+      {/* Header */}
+      <PageHeader
+          title="Change Log"
+          description="ประวัติการอัปเดตและการเปลี่ยนแปลง"
+          icon={<GitCommit className="h-5 w-5" />}
+          iconGradient="from-violet-500 to-purple-500"
+        />
 
         {/* Changelog entries */}
         <div className="space-y-8">
@@ -217,7 +211,6 @@ export function ChangelogPage() {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

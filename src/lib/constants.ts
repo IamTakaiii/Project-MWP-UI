@@ -44,6 +44,20 @@ export const DEFAULT_VALUES = {
   SKIP_WEEKENDS: true,
 } as const;
 
+// Timing constants (in milliseconds)
+export const DELAYS = {
+  WORKLOG_SUBMISSION: 300,
+  DEBOUNCE_SEARCH: 300,
+  TOAST_DURATION: 5000,
+} as const;
+
+// Limit constants
+export const LIMITS = {
+  MAX_DATE_RANGE_DAYS: 60,
+  EIGHT_HOURS_SECONDS: 8 * 60 * 60,
+  EIGHT_HOURS_DISPLAY: 8,
+} as const;
+
 // Admin/Recurring tasks - predefined tasks for common activities
 export const ADMIN_TASKS = [
   { key: "ADM-6", summary: "General Admin" },

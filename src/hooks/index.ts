@@ -10,4 +10,12 @@ export {
   type OutputView,
   type UseJsonFormatterReturn,
 } from "./use-json-formatter";
+export { useWorklogTracking } from "./use-worklog-tracking";
+export { useAuth, type AuthState, type UseAuthReturn } from "./use-auth";
+export {
+  useWorklogClipboard,
+  getCopiedWorklogSilent,
+  type WorklogClipboardData,
+  type UseWorklogClipboardReturn,
+} from "./use-worklog-clipboard";
 export type { DiffResult } from "@/lib/json-utils";

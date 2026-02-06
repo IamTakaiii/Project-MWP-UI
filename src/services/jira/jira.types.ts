@@ -205,3 +205,72 @@ export interface BoardResponse {
   name: string;
   projectKey?: string;
 }
+
+// ============================================
+// Worklog Tracking
+// ============================================
+
+export interface WorklogTrackingEntry {
+  id: string;
+  userId: string;
+  sessionId: string;
+  jiraIssueKey: string;
+  worklogId: string | null;
+  worklogDate: string;
+  executionTimestamp: string;
+  status: "success" | "failed";
+  httpStatusCode: number | null;
+  timeSpentSeconds: number | null;
+  requestPayload: string | null;
+  responsePayload: string | null;
+  errorMessage: string | null;
+  errorCode: string | null;
+  retryCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorklogTrackingCheckResponse {
+  success: boolean;
+  message: string;
+  data: {
+    userId: string;
+    worklogDate: string;
+    isSubmitted: boolean;
+    submissions: Array<{
+      jiraIssueKey: string;
+      status: "success" | "failed";
+      executionTimestamp: string;
+      timeSpentSeconds: number;
+    }>;
+  };
+}
+
+export interface WorklogTrackingSummaryResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totalSubmissions: number;
+    successCount: number;
+    failedCount: number;
+    successRate: number;
+    dateRange: {
+      startDate: string;
+      endDate: string;
+    };
+    failedDates: string[];
+    history: WorklogTrackingEntry[];
+  };
+}
+
+export interface WorklogTrackingFailedResponse {
+  success: boolean;
+  message: string;
+  data: WorklogTrackingEntry[];
+}
+
+export interface WorklogTrackingIssueHistoryResponse {
+  success: boolean;
+  message: string;
+  data: WorklogTrackingEntry[];
+}

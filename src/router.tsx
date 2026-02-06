@@ -11,6 +11,7 @@ import { SSEMonitorPage } from "@/pages/sse-monitor";
 import { JsonFormatterPage } from "@/pages/json-formatter";
 import { ChangelogPage } from "@/pages/changelog";
 import { EpicReportPage } from "@/pages/epic-report";
+import { WorklogTrackingPage } from "@/pages/worklog-tracking";
 
 // Root route
 const rootRoute = createRootRoute({
@@ -73,6 +74,13 @@ const epicReportRoute = createRoute({
   component: EpicReportPage,
 });
 
+// Worklog Tracking route
+const worklogTrackingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/worklog-tracking",
+  component: WorklogTrackingPage,
+});
+
 // Route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -82,6 +90,7 @@ const routeTree = rootRoute.addChildren([
   jsonFormatterRoute,
   changelogRoute,
   epicReportRoute,
+  worklogTrackingRoute,
 ]);
 
 // Create router

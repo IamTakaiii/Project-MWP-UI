@@ -1,5 +1,6 @@
 import { Outlet } from "@tanstack/react-router";
 import { Toaster } from "sonner";
+import { NavBar } from "@/components/navbar";
 
 export default function RootLayout() {
   return (
@@ -11,8 +12,13 @@ export default function RootLayout() {
         <div className="absolute top-[40%] left-[40%] w-[300px] h-[300px] bg-warning/5 rounded-full blur-[100px]" />
       </div>
 
+      {/* Global Navigation */}
+      <NavBar />
+
       {/* Page content */}
-      <Outlet />
+      <main>
+        <Outlet />
+      </main>
 
       {/* Toast notifications */}
       <Toaster

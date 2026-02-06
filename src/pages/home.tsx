@@ -5,8 +5,9 @@ import {
   BarChart3,
   Terminal,
   FileJson,
-  // Calendar,
+  ScrollText,
 } from "lucide-react";
+import { PageContainer } from "@/components";
 
 interface AppCard {
   id: string;
@@ -37,7 +38,6 @@ const apps: AppCard[] = [
     gradient: "from-purple-500 to-pink-400",
     available: true,
   },
-
   {
     id: "reports",
     title: "Reports & Analytics",
@@ -47,15 +47,6 @@ const apps: AppCard[] = [
     gradient: "from-rose-500 to-red-400",
     available: true,
   },
-  // {
-  //   id: 'settings',
-  //   title: 'Settings',
-  //   description: 'ตั้งค่าการเชื่อมต่อและค่าเริ่มต้นต่างๆ',
-  //   icon: <Settings className="w-8 h-8" />,
-  //   href: '/settings',
-  //   gradient: 'from-slate-500 to-slate-400',
-  //   available: false,
-  // },
   {
     id: "sse-monitor",
     title: "SSE Monitor",
@@ -149,30 +140,39 @@ function AppCardComponent({ app }: { app: AppCard }) {
 
 export function HomePage() {
   return (
-    <div className="min-h-screen p-6 md:p-10">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <header className="text-center mb-12">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg">
-              🚀
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              My Workspace
-            </h1>
+    <PageContainer>
+      {/* Header */}
+      <header className="text-center mb-12">
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-violet-500/30">
+            🚀
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            ใช้ไม่ใช้ก็แล้วแต่
-          </p>
-        </header>
-
-        {/* App Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {apps.map((app) => (
-            <AppCardComponent key={app.id} app={app} />
-          ))}
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            My Workspace
+          </h1>
         </div>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          เครื่องมือช่วยทำงานประจำวัน
+        </p>
+      </header>
+
+      {/* App Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {apps.map((app) => (
+          <AppCardComponent key={app.id} app={app} />
+        ))}
       </div>
-    </div>
+
+      {/* Footer */}
+      <footer className="mt-16 text-center">
+        <Link
+          to="/changelog"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ScrollText className="h-4 w-4" />
+          ดู Change Log
+        </Link>
+      </footer>
+    </PageContainer>
   );
 }

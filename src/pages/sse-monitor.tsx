@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   Radio,
   Trash2,
   Download,
@@ -12,7 +10,6 @@ import {
   Wifi,
   WifiOff,
   Clock,
-  Terminal,
   Star,
   X,
   Key,
@@ -251,60 +248,10 @@ export function SSEMonitorPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-emerald-500/20">
-                  <Terminal className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">SSE Monitor</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Real-time Server-Sent Events viewer
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Connection Status */}
-            <div
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
-                isConnected
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-gray-500/20 text-gray-400",
-              )}
-            >
-              {isConnected ? (
-                <>
-                  <Wifi className="h-4 w-4" />
-                  <span className="text-sm font-medium">Connected</span>
-                  {authType !== "none" && <Lock className="h-3 w-3" />}
-                  <span className="animate-pulse text-emerald-400">●</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-4 w-4" />
-                  <span className="text-sm font-medium">Disconnected</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
       {/* Connection Bar */}
       <div className="border-b border-white/10 bg-black/10">
-        <div className="max-w-[1400px] mx-auto px-4 py-4 space-y-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 space-y-3">
           {/* URL Input Row */}
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground whitespace-nowrap">
@@ -766,7 +713,7 @@ export function SSEMonitorPage() {
 
       {/* Toolbar */}
       <div className="border-b border-white/10 bg-black/5">
-        <div className="max-w-[1400px] mx-auto px-4 py-2">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Input
@@ -830,7 +777,7 @@ export function SSEMonitorPage() {
 
       {/* Events List - Terminal Style */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-[#0a0a0f]">
-        <div className="max-w-[1400px] mx-auto font-mono text-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 font-mono text-sm">
           {filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <Radio className="h-12 w-12 mb-4 opacity-30" />
@@ -856,8 +803,8 @@ export function SSEMonitorPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-black/20 py-2 px-4">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between text-xs text-muted-foreground">
+      <footer className="border-t border-white/10 bg-black/20 py-2 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             {isConnected
               ? `Connected to: ${url.includes("/sse-proxy") ? inputUrl : url}`

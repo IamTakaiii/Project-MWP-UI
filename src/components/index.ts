@@ -1,4 +1,4 @@
-export { Header } from "./header";
+export { PageContainer, PageHeader } from "./navbar";
 export { ConnectionForm } from "./connection-form";
 export { TaskDetails } from "./task-details";
 export { TaskPicker } from "./task-picker";

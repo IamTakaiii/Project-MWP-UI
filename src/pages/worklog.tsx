@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Rocket, Plus, ClipboardPaste } from "lucide-react";
+import { Rocket, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
-  Header,
+  PageContainer,
+  PageHeader,
   ConnectionForm,
   TaskDetails,
   DateTimeForm,
@@ -15,19 +16,29 @@ import {
   useWorklog,
   useTasks,
   useFavoriteTasks,
+  useAuth,
+  useWorklogClipboard,
+  getCopiedWorklogSilent,
 } from "@/hooks";
 import { generateDateRange } from "@/lib/date-utils";
 import { STORAGE_KEYS, DEFAULT_VALUES } from "@/lib/constants";
-import { jiraAuthService } from "@/services/auth.service";
 import type { JiraIssue } from "@/types";
 
 type SaveMode = "add-another" | "close";
 
 export function WorklogPage() {
-  // Session state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [jiraUrl, setJiraUrl] = useState("");
+  // Auth state (using centralized hook)
+  const {
+    isAuthenticated,
+    isCheckingAuth,
+    jiraUrl,
+    setIsAuthenticated,
+    logout,
+    refreshSession,
+  } = useAuth();
+
+  // Clipboard hook
+  const { pasteWorklog } = useWorklogClipboard();
 
   // Task ID (persisted)
   const [taskId, setTaskId] = useLocalStorage(STORAGE_KEYS.TASK_ID, "");
@@ -80,52 +91,25 @@ export function WorklogPage() {
     };
   }, [isAuthenticated, previewDates, taskId, startDate, endDate, comment]);
 
-  // Check authentication on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsCheckingAuth(true);
-      try {
-        const session = await jiraAuthService.getCurrentSession();
-        setIsAuthenticated(session.authenticated);
-        if (session.authenticated && session.jiraUrl) {
-          setJiraUrl(session.jiraUrl);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  // Load copied worklog data on mount
+  // Load copied worklog data on mount (using utility function)
   useEffect(() => {
     if (isAuthenticated) {
-      const copiedWorklogStr = localStorage.getItem(
-        STORAGE_KEYS.COPIED_WORKLOG,
-      );
-      if (copiedWorklogStr) {
-        try {
-          const copiedWorklog = JSON.parse(copiedWorklogStr);
-          // Only auto-fill if form is empty
-          if (!taskId && !startDate && !timeSpent && !comment) {
-            setTaskId(copiedWorklog.issueKey || "");
-            setStartDate(copiedWorklog.date || "");
-            setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT);
-            setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME);
-            setComment(copiedWorklog.comment || "");
+      const copiedWorklog = getCopiedWorklogSilent();
+      if (copiedWorklog) {
+        // Only auto-fill if form is empty
+        if (!taskId && !startDate && !timeSpent && !comment) {
+          setTaskId(copiedWorklog.issueKey || "");
+          setStartDate(copiedWorklog.date || "");
+          setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT);
+          setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME);
+          setComment(copiedWorklog.comment || "");
 
-            // Clear copied data after using
-            localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG);
-
-            toast.success("วางข้อมูล worklog แล้ว", {
-              description: `Task: ${copiedWorklog.issueKey}`,
-            });
-          }
-        } catch (error) {
-          // Invalid JSON, ignore
+          // Clear copied data after using
           localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG);
+
+          toast.success("วางข้อมูล worklog แล้ว", {
+            description: `Task: ${copiedWorklog.issueKey}`,
+          });
         }
       }
     }
@@ -134,43 +118,19 @@ export function WorklogPage() {
   // Handlers
   const handleLoginSuccess = useCallback(() => {
     setIsAuthenticated(true);
-    // Refresh session info
-    jiraAuthService.getCurrentSession().then((session) => {
-      if (session.authenticated && session.jiraUrl) {
-        setJiraUrl(session.jiraUrl);
-      }
-    });
-  }, []);
+    refreshSession();
+  }, [setIsAuthenticated, refreshSession]);
 
   const handlePasteWorklog = useCallback(() => {
-    const copiedWorklogStr = localStorage.getItem(STORAGE_KEYS.COPIED_WORKLOG);
-    if (copiedWorklogStr) {
-      try {
-        const copiedWorklog = JSON.parse(copiedWorklogStr);
-        setTaskId(copiedWorklog.issueKey || "");
-        setStartDate(copiedWorklog.date || "");
-        setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT);
-        setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME);
-        setComment(copiedWorklog.comment || "");
-
-        // Clear copied data after using
-        localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG);
-
-        toast.success("วางข้อมูล worklog แล้ว", {
-          description: `Task: ${copiedWorklog.issueKey}`,
-        });
-      } catch (error) {
-        toast.error("ไม่สามารถวางข้อมูลได้", {
-          description: "ข้อมูลที่คัดลอกไม่ถูกต้อง",
-        });
-        localStorage.removeItem(STORAGE_KEYS.COPIED_WORKLOG);
-      }
-    } else {
-      toast.info("ไม่มีข้อมูลที่คัดลอก", {
-        description: "กรุณาคัดลอก worklog จากหน้า History ก่อน",
-      });
+    const copiedWorklog = pasteWorklog();
+    if (copiedWorklog) {
+      setTaskId(copiedWorklog.issueKey || "");
+      setStartDate(copiedWorklog.date || "");
+      setTimeSpent(copiedWorklog.timeSpent || DEFAULT_VALUES.TIME_SPENT);
+      setStartTime(copiedWorklog.startTime || DEFAULT_VALUES.START_TIME);
+      setComment(copiedWorklog.comment || "");
     }
-  }, [setTaskId]);
+  }, [pasteWorklog, setTaskId]);
 
   const handleFetchTasks = useCallback(() => {
     tasks.fetchTasks();
@@ -297,30 +257,27 @@ export function WorklogPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="p-4 md:p-8">
-        <div className="max-w-[1200px] mx-auto relative z-10">
-          <Header />
-          <div className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)] text-center">
-            <p className="text-muted-foreground">
-              กำลังตรวจสอบการเข้าสู่ระบบ...
-            </p>
-          </div>
+      <PageContainer>
+        <div className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)] text-center">
+          <p className="text-muted-foreground">
+            กำลังตรวจสอบการเข้าสู่ระบบ...
+          </p>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 min-h-screen">
-      <div className="max-w-[1200px] mx-auto relative z-10">
-        <Header />
+    <PageContainer>
+      <PageHeader
+        title="Create Worklogs"
+        description="สร้าง worklog แบบ batch สำหรับหลายวันพร้อมกัน"
+        icon={<Pencil className="h-5 w-5" />}
+      />
 
-        {!isAuthenticated ? (
+      {!isAuthenticated ? (
           // Center login form vertically
-          <div
-            className="flex items-center justify-center"
-            style={{ minHeight: "calc(100vh - 200px)" }}
-          >
+          <div className="flex items-center justify-center">
             <div className="w-full max-w-xl">
               <div className="bg-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
                 <ConnectionForm onLoginSuccess={handleLoginSuccess} />
@@ -342,11 +299,7 @@ export function WorklogPage() {
                   jiraUrl={jiraUrl}
                   onTaskIdChange={setTaskId}
                   onPasteWorklog={handlePasteWorklog}
-                  onLogout={async () => {
-                    await jiraAuthService.logout();
-                    setIsAuthenticated(false);
-                    setJiraUrl("");
-                  }}
+                  onLogout={logout}
                   taskPicker={taskPickerProps}
                 />
 
@@ -412,13 +365,12 @@ export function WorklogPage() {
               <LogPanel logs={logs} onClear={clearLogs} />
             </div>
 
-            {/* Mini History Sidebar */}
-            <div ref={historyRef} className="flex flex-col xl:sticky xl:top-8">
-              <MiniHistory className="h-full" />
-            </div>
-          </div>
-        )}
+        {/* Mini History Sidebar */}
+        <div ref={historyRef} className="flex flex-col xl:sticky xl:top-20">
+          <MiniHistory className="h-full" />
+        </div>
       </div>
-    </div>
+    )}
+    </PageContainer>
   );
 }

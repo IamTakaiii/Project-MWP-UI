@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   FileJson,
   GitCompare,
   Search,
   List,
   TreePine,
 } from "lucide-react";
+import { PageContainer } from "@/components";
 import { Button } from "@/components/ui/button";
 import { JsonInput } from "@/components/json-input";
 import { JsonViewer } from "@/components/json-viewer";
@@ -64,27 +63,8 @@ export function JsonFormatterPage() {
   } = useJsonFormatter();
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <header className="mb-6">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              กลับหน้าหลัก
-            </Button>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
-              <FileJson className="w-5 h-5" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              JSON Formatter
-            </h1>
-          </div>
-        </header>
-
-        {/* Mode Selector Tabs */}
+    <PageContainer>
+      {/* Mode Selector Tabs */}
         <div className="bg-card border border-border rounded-2xl p-1 mb-6 inline-flex">
           {modeTabs.map((tab) => (
             <button
@@ -388,7 +368,6 @@ export function JsonFormatterPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

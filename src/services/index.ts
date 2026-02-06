@@ -9,8 +9,17 @@
 export { ApiClient, ApiError } from "./api";
 export type { ServiceConfig, ServicesConfig, RequestOptions } from "./api";
 
-// Jira Service
+// Jira Service (Facade - for backward compatibility)
 export { jiraService, JiraService } from "./jira";
+
+// Specialized Jira Services (preferred for new code)
+export { worklogService, WorklogService } from "./jira/worklog.service";
+export { taskService, TaskService } from "./jira/task.service";
+export { reportService, ReportService } from "./jira/report.service";
+export { exportService, ExportService } from "./jira/export.service";
+export { trackingService, TrackingService } from "./jira/tracking.service";
+
+// Jira Types
 export type {
   JiraCredentials,
   JiraIssue,

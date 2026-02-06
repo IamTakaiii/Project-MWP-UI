@@ -5,7 +5,6 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Search,
@@ -40,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { jiraService, type WorklogEntry } from "@/services";
-import { jiraAuthService } from "@/services/auth.service";
+import { PageContainer, PageHeader } from "@/components";
 import {
   WorklogDialog,
   DeleteConfirmDialog,
@@ -55,12 +54,15 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { STORAGE_KEYS } from "@/lib/constants";
-import { useFavoriteTasks } from "@/hooks/use-favorite-tasks";
+import { LIMITS } from "@/lib/constants";
+import {
+  useAuth,
+  useFavoriteTasks,
+  useWorklogClipboard,
+} from "@/hooks";
 import { useWorklogStats } from "@/hooks/use-worklog-stats";
 import { formatDurationSeconds, formatTimeRange } from "@/lib/date-utils";
-
-const EIGHT_HOURS_SECONDS = 8 * 60 * 60;
+import { getErrorMessage } from "@/lib/error-utils";
 
 type ViewMode = "daily" | "weekly";
 
@@ -70,10 +72,11 @@ export function HistoryPage() {
   const dateFromQuery = search.date as string | undefined;
   const navigate = useNavigate({ from: "/history" });
 
-  // Session state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [jiraUrl, setJiraUrl] = useState("");
+  // Auth state (using centralized hook)
+  const { isAuthenticated, isCheckingAuth, jiraUrl } = useAuth();
+
+  // Clipboard hook
+  const { copyWorklog, prepareForDuplicate } = useWorklogClipboard();
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>("daily");
@@ -167,46 +170,17 @@ export function HistoryPage() {
     startDate && endDate
       ? differenceInDays(parseISO(endDate), parseISO(startDate))
       : 0;
-  const isWithinMonthLimit = dateRangeDays <= 60;
+  const isWithinMonthLimit = dateRangeDays <= LIMITS.MAX_DATE_RANGE_DAYS;
   const dateError = !isDateRangeValid
     ? "วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด"
     : !isWithinMonthLimit
-      ? "ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)"
+      ? `ช่วงวันที่ต้องไม่เกิน ${LIMITS.MAX_DATE_RANGE_DAYS} วัน`
       : null;
-
-  // Check authentication on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsCheckingAuth(true);
-      try {
-        const session = await jiraAuthService.getCurrentSession();
-        setIsAuthenticated(session.authenticated);
-        if (session.authenticated && session.jiraUrl) {
-          setJiraUrl(session.jiraUrl);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    checkAuth();
-  }, []);
 
   // Fetch worklogs
   const fetchData = useCallback(async () => {
     if (!isAuthenticated) {
       setError("กรุณาเข้าสู่ระบบก่อน");
-      return;
-    }
-
-    if (!isDateRangeValid) {
-      setError("วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด");
-      return;
-    }
-
-    if (!isWithinMonthLimit) {
-      setError("ช่วงวันที่ต้องไม่เกิน 60 วัน (2 เดือน)");
       return;
     }
 
@@ -221,20 +195,12 @@ export function HistoryPage() {
         setCurrentDayIndex(0);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+      setError(getErrorMessage(err));
       setWorklogs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [
-    isAuthenticated,
-    isDateRangeValid,
-    startDate,
-    endDate,
-    dateFromQuery,
-    isWithinMonthLimit,
-  ]);
+  }, [isAuthenticated, startDate, endDate, dateFromQuery]);
 
   // Sync dates with query param ONLY if it exists
   useEffect(() => {
@@ -324,54 +290,17 @@ ${taskLines}
     setIsBulkDeleteDialogOpen(true);
   };
 
-  // Context menu handlers
+  // Context menu handlers (using clipboard hook)
   const handleCopyWorklog = (worklog: WorklogEntry) => {
-    // Copy text to clipboard
-    const worklogText = `${worklog.issueKey} | ${worklog.timeSpent} | ${format(new Date(worklog.started), "dd/MM/yyyy HH:mm")} | ${worklog.comment || "-"}`;
-    navigator.clipboard.writeText(worklogText);
-
-    // Store worklog data in localStorage for paste functionality
-    const worklogData = {
-      issueKey: worklog.issueKey,
-      timeSpent: worklog.timeSpent,
-      date: format(new Date(worklog.started), "yyyy-MM-dd"),
-      startTime: format(new Date(worklog.started), "HH:mm"),
-      comment: worklog.comment || "",
-    };
-    localStorage.setItem(
-      STORAGE_KEYS.COPIED_WORKLOG,
-      JSON.stringify(worklogData),
-    );
-
-    toast.success("คัดลอกข้อมูล worklog แล้ว", {
-      description: `${worklog.issueKey} - ${worklog.timeSpent} • คลิกปุ่ม "วางข้อมูล" ในหน้า Worklog เพื่อใช้`,
-      duration: 5000,
-    });
+    copyWorklog(worklog);
   };
 
   const handleDuplicateWorklog = (worklog: WorklogEntry) => {
-    // Store worklog data in localStorage for paste functionality
-    const worklogData = {
-      issueKey: worklog.issueKey,
-      timeSpent: worklog.timeSpent,
-      date: format(new Date(worklog.started), "yyyy-MM-dd"),
-      startTime: format(new Date(worklog.started), "HH:mm"),
-      comment: worklog.comment || "",
-    };
-    localStorage.setItem(
-      STORAGE_KEYS.COPIED_WORKLOG,
-      JSON.stringify(worklogData),
-    );
-
+    prepareForDuplicate(worklog);
     // Also open dialog for immediate use
     setSelectedWorklog(worklog);
     setIsDuplicateMode(true);
     setIsWorklogDialogOpen(true);
-
-    toast.success("เตรียมข้อมูลสำหรับสร้างซ้ำแล้ว", {
-      description: `${worklog.issueKey} - ${worklog.timeSpent} • สามารถใช้ปุ่ม "วางข้อมูล" ในหน้า Worklog ได้`,
-      duration: 5000,
-    });
   };
 
   const getContextMenuActions = (
@@ -510,35 +439,24 @@ ${taskLines}
   }, [filteredWorklogs]);
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="max-w-[1000px] mx-auto items-center justify-between mb-4">
-        {/* Header */}
-        <header className="mb-6">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              กลับหน้าหลัก
-            </Button>
-          </Link>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
-                <CalendarClock className="w-5 h-5" />
-              </div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Worklog History
-              </h1>
-            </div>
-            {isAuthenticated && (
+    <PageContainer>
+      {/* Header */}
+      <PageHeader
+          title="Worklog History"
+          description="ดูประวัติ worklog แก้ไข ลบ และตรวจสอบชั่วโมงทำงาน"
+          icon={<CalendarClock className="h-5 w-5" />}
+          iconGradient="from-amber-500 to-orange-500"
+          actions={
+            isAuthenticated && (
               <Link to="/worklog">
-                <Button className="bg-success hover:bg-success/90 gap-2">
+                <Button size="sm" className="bg-success hover:bg-success/90 gap-2">
                   <Plus className="h-4 w-4" />
-                  เพิ่ม Worklog
+                  <span className="hidden sm:inline">เพิ่ม Worklog</span>
                 </Button>
               </Link>
-            )}
-          </div>
-        </header>
+            )
+          }
+        />
 
         {/* Date Filter Card */}
         <div className="bg-card/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
@@ -964,15 +882,15 @@ ${taskLines}
             {/* Day Header */}
             <div
               className={cn(
-                "p-5 border-b",
+                "p-4 md:p-5 border-b",
                 currentDay.isComplete
                   ? "bg-success/10 border-white/10"
                   : "bg-gradient-to-r from-orange-500/20 via-red-500/15 to-orange-500/20 border-orange-500/30",
               )}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xl font-bold">
+                  <h3 className="text-lg md:text-xl font-bold">
                     วันที่: {format(new Date(currentDay.date), "dd/MM/yyyy")}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -987,17 +905,17 @@ ${taskLines}
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 bg-orange-500/20 px-4 py-2 rounded-xl border border-orange-500/40">
-                    <span className="text-xl animate-pulse">🚨</span>
-                    <AlertCircle className="h-5 w-5 text-orange-400 animate-bounce" />
+                  <div className="flex items-center gap-2 md:gap-3 bg-orange-500/20 px-3 md:px-4 py-2 rounded-xl border border-orange-500/40 self-start md:self-auto">
+                    <span className="text-lg md:text-xl animate-pulse">🚨</span>
+                    <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-orange-400 animate-bounce" />
                     <div className="text-right">
-                      <p className="font-bold text-orange-300">
+                      <p className="font-bold text-orange-300 text-sm md:text-base">
                         ยังไม่ครบ 8 ชม.!
                       </p>
                       <p className="text-xs text-orange-400/80">
                         เหลืออีก{" "}
                         {formatDurationSeconds(
-                          EIGHT_HOURS_SECONDS - currentDay.totalSeconds,
+                          LIMITS.EIGHT_HOURS_SECONDS - currentDay.totalSeconds,
                         )}
                       </p>
                     </div>
@@ -1006,198 +924,321 @@ ${taskLines}
               </div>
 
               {/* Summary & Navigation */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                <div className="flex items-center gap-3">
-                  <p className="text-sm">
-                    รวมเวลาวันนี้:{" "}
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        currentDay.isComplete
-                          ? "text-success"
-                          : "text-orange-400",
-                      )}
+              <div className="mt-4 pt-4 border-t border-white/10 space-y-3 md:space-y-0">
+                {/* Mobile Layout */}
+                <div className="md:hidden space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm">
+                      รวมเวลาวันนี้:{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          currentDay.isComplete
+                            ? "text-success"
+                            : "text-orange-400",
+                        )}
+                      >
+                        {formatDurationSeconds(currentDay.totalSeconds)}
+                      </span>{" "}
+                      / 8h
+                    </p>
+                    <span className="text-sm text-muted-foreground">
+                      {currentDay.worklogs.length} รายการ
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyDailySummary}
+                      disabled={currentDay.worklogs.length === 0}
+                      className="gap-1.5 border-white/20 hover:bg-white/10 hover:border-primary/50"
+                      title="คัดลอกสรุปงานวันนี้"
                     >
-                      {formatDurationSeconds(currentDay.totalSeconds)}
-                    </span>{" "}
-                    / 8h
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyDailySummary}
-                    disabled={currentDay.worklogs.length === 0}
-                    className="gap-1.5 border-white/20 hover:bg-white/10 hover:border-primary/50"
-                    title="คัดลอกสรุปงานวันนี้"
-                  >
-                    <ClipboardList className="h-4 w-4" />
-                    สรุปงาน
-                  </Button>
+                      <ClipboardList className="h-4 w-4" />
+                      สรุปงาน
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={goToPreviousDay}
+                        disabled={currentDayIndex <= 0}
+                        className="h-8 w-8 border-white/20 hover:bg-white/10"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs text-muted-foreground px-1 whitespace-nowrap">
+                        {currentDayIndex + 1}/{totalDays}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={goToNextDay}
+                        disabled={currentDayIndex >= totalDays - 1}
+                        className="h-8 w-8 border-white/20 hover:bg-white/10"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    ทั้งหมด {currentDay.worklogs.length} รายการ
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousDay}
-                    disabled={currentDayIndex <= 0}
-                    className="gap-1 border-white/20 hover:bg-white/10"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    วันก่อนหน้า
-                  </Button>
-                  <span className="text-sm text-muted-foreground px-2">
-                    ({currentDayIndex + 1} / {totalDays})
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextDay}
-                    disabled={currentDayIndex >= totalDays - 1}
-                    className="gap-1 border-white/20 hover:bg-white/10"
-                  >
-                    วันถัดไป
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+
+                {/* Desktop Layout */}
+                <div className="hidden md:flex md:items-center md:justify-between">
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm">
+                      รวมเวลาวันนี้:{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          currentDay.isComplete
+                            ? "text-success"
+                            : "text-orange-400",
+                        )}
+                      >
+                        {formatDurationSeconds(currentDay.totalSeconds)}
+                      </span>{" "}
+                      / 8h
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyDailySummary}
+                      disabled={currentDay.worklogs.length === 0}
+                      className="gap-1.5 border-white/20 hover:bg-white/10 hover:border-primary/50"
+                      title="คัดลอกสรุปงานวันนี้"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      สรุปงาน
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      ทั้งหมด {currentDay.worklogs.length} รายการ
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousDay}
+                      disabled={currentDayIndex <= 0}
+                      className="gap-1 border-white/20 hover:bg-white/10"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      วันก่อนหน้า
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-2">
+                      ({currentDayIndex + 1} / {totalDays})
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextDay}
+                      disabled={currentDayIndex >= totalDays - 1}
+                      className="gap-1 border-white/20 hover:bg-white/10"
+                    >
+                      วันถัดไป
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Worklog Table */}
-            <div className="p-5">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="w-[100px]">Issue Key</TableHead>
-                    <TableHead>Task</TableHead>
-                    <TableHead>Comment</TableHead>
-                    <TableHead className="w-[130px]">From - To</TableHead>
-                    <TableHead className="w-[80px] text-right">Time</TableHead>
-                    <TableHead className="w-[100px] text-right">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentDay.worklogs.map((worklog) => (
-                    <TableRow
-                      key={worklog.id}
-                      className="border-white/10 hover:bg-white/5 relative"
-                      onContextMenu={(e) => {
-                        setContextMenuWorklog(worklog);
-                        contextMenu.openMenu(e);
-                      }}
-                    >
-                      <TableCell className="font-mono font-semibold text-[#4C9AFF]">
+            <div className="p-4 md:p-5">
+              {/* Mobile Card Layout */}
+              <div className="md:hidden space-y-3">
+                {currentDay.worklogs.map((worklog) => (
+                  <div
+                    key={worklog.id}
+                    className="bg-white/5 rounded-xl p-4 border border-white/10"
+                    onContextMenu={(e) => {
+                      setContextMenuWorklog(worklog);
+                      contextMenu.openMenu(e);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
                         <a
                           href={`${jiraUrl}/browse/${worklog.issueKey}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:underline"
+                          className="font-mono font-semibold text-[#4C9AFF] hover:underline"
                         >
                           {worklog.issueKey}
                         </a>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {worklog.issueSummary}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[150px] truncate">
-                        {worklog.comment || "-"}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {formatTimeRange(
-                          worklog.started,
-                          worklog.timeSpentSeconds,
+                        <p className="text-sm mt-1 truncate">{worklog.issueSummary}</p>
+                        {worklog.comment && (
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {worklog.comment}
+                          </p>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {worklog.timeSpent}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(worklog)}
-                            className="h-8 w-8 hover:bg-white/10 hover:text-[#4C9AFF]"
-                            title="แก้ไข"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openDeleteDialog(worklog)}
-                            className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
-                            title="ลบ"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(worklog)}
+                          className="h-8 w-8 hover:bg-white/10 hover:text-[#4C9AFF]"
+                          title="แก้ไข"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(worklog)}
+                          className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                          title="ลบ"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10 text-sm">
+                      <span className="font-mono text-muted-foreground">
+                        {formatTimeRange(worklog.started, worklog.timeSpentSeconds)}
+                      </span>
+                      <span className="font-semibold">{worklog.timeSpent}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="w-[100px]">Issue Key</TableHead>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Comment</TableHead>
+                      <TableHead className="w-[130px]">From - To</TableHead>
+                      <TableHead className="w-[80px] text-right">Time</TableHead>
+                      <TableHead className="w-[100px] text-right">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentDay.worklogs.map((worklog) => (
+                      <TableRow
+                        key={worklog.id}
+                        className="border-white/10 hover:bg-white/5 relative"
+                        onContextMenu={(e) => {
+                          setContextMenuWorklog(worklog);
+                          contextMenu.openMenu(e);
+                        }}
+                      >
+                        <TableCell className="font-mono font-semibold text-[#4C9AFF]">
+                          <a
+                            href={`${jiraUrl}/browse/${worklog.issueKey}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {worklog.issueKey}
+                          </a>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {worklog.issueSummary}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                          {worklog.comment || "-"}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {formatTimeRange(
+                            worklog.started,
+                            worklog.timeSpentSeconds,
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {worklog.timeSpent}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(worklog)}
+                              className="h-8 w-8 hover:bg-white/10 hover:text-[#4C9AFF]"
+                              title="แก้ไข"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openDeleteDialog(worklog)}
+                              className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                              title="ลบ"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Context Menu */}
-      {contextMenuWorklog && (
-        <ContextMenu
-          isOpen={contextMenu.isOpen}
-          position={contextMenu.position}
-          actions={getContextMenuActions(contextMenuWorklog)}
+        {/* Context Menu */}
+        {contextMenuWorklog && (
+          <ContextMenu
+            isOpen={contextMenu.isOpen}
+            position={contextMenu.position}
+            actions={getContextMenuActions(contextMenuWorklog)}
+            onClose={() => {
+              contextMenu.closeMenu();
+              setContextMenuWorklog(null);
+            }}
+          />
+        )}
+
+        {/* Dialogs */}
+        <WorklogDialog
+          isOpen={isWorklogDialogOpen}
           onClose={() => {
-            contextMenu.closeMenu();
-            setContextMenuWorklog(null);
+            setIsWorklogDialogOpen(false);
+            setSelectedWorklog(null);
+            setIsDuplicateMode(false);
           }}
+          onSave={handleSaveWorklog}
+          worklog={isDuplicateMode ? null : selectedWorklog}
+          issueSummary={selectedWorklog?.issueSummary}
         />
-      )}
 
-      {/* Dialogs */}
-      <WorklogDialog
-        isOpen={isWorklogDialogOpen}
-        onClose={() => {
-          setIsWorklogDialogOpen(false);
-          setSelectedWorklog(null);
-          setIsDuplicateMode(false);
-        }}
-        onSave={handleSaveWorklog}
-        worklog={isDuplicateMode ? null : selectedWorklog}
-        issueSummary={selectedWorklog?.issueSummary}
-      />
+        <DeleteConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedWorklog(null);
+          }}
+          onConfirm={handleDeleteWorklog}
+          worklog={selectedWorklog}
+        />
 
-      <DeleteConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedWorklog(null);
-        }}
-        onConfirm={handleDeleteWorklog}
-        worklog={selectedWorklog}
-      />
-
-      <BulkDeleteConfirmDialog
-        isOpen={isBulkDeleteDialogOpen}
-        onClose={() => {
-          setIsBulkDeleteDialogOpen(false);
-          setSelectedWorklog(null);
-        }}
-        onConfirm={handleBulkDeleteWorklog}
-        worklog={selectedWorklog}
-        count={
-          selectedWorklog
-            ? filteredWorklogs.filter(
-              (w) => w.issueKey === selectedWorklog.issueKey,
-            ).length
-            : 0
-        }
-      />
-    </div>
+        <BulkDeleteConfirmDialog
+          isOpen={isBulkDeleteDialogOpen}
+          onClose={() => {
+            setIsBulkDeleteDialogOpen(false);
+            setSelectedWorklog(null);
+          }}
+          onConfirm={handleBulkDeleteWorklog}
+          worklog={selectedWorklog}
+          count={
+            selectedWorklog
+              ? filteredWorklogs.filter(
+                (w) => w.issueKey === selectedWorklog.issueKey,
+              ).length
+              : 0
+          }
+        />
+    </PageContainer>
   );
 }
